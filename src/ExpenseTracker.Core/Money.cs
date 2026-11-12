@@ -11,6 +11,15 @@ public static class Money
     public static decimal Round(decimal amount) =>
         Math.Round(amount, 2, MidpointRounding.AwayFromZero);
 
+    public static bool IsStorable(decimal amount)
+    {
+        var isInRange = amount >= 0 && amount <= MaxAmount;
+        var hasAtMostTwoDecimals = Round(amount) == amount;
+        var result = isInRange && hasAtMostTwoDecimals;
+
+        return result;
+    }
+
     public static string Format(decimal amount)
     {
         var rounded = Round(amount);
@@ -80,7 +89,7 @@ public static class Money
             return false;
         }
 
-        if (value > MaxAmount || Round(value) != value)
+        if (!IsStorable(value))
         {
             return false;
         }

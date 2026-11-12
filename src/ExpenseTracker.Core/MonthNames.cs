@@ -9,17 +9,14 @@ public static class MonthNames
     public static string Format(int year, int month) =>
         new DateTime(year, month, 1).ToString("MMMM yyyy", CultureInfo.InvariantCulture);
 
-    public static string Normalise(string name) =>
-        string.Join(' ', name.Trim().ToLowerInvariant().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
-
     public static string NextAvailable(IEnumerable<string> existing, int year, int month)
     {
-        var taken = existing.Select(Normalise).ToHashSet();
+        var taken = existing.Select(NameKey.Normalise).ToHashSet();
         var cursor = new DateTime(year, month, 1);
         for (var i = 0; i < MaxLookaheadMonths; i++)
         {
             var candidate = Format(cursor.Year, cursor.Month);
-            if (!taken.Contains(Normalise(candidate)))
+            if (!taken.Contains(NameKey.Normalise(candidate)))
             {
                 return candidate;
             }

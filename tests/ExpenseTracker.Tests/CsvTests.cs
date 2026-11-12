@@ -46,6 +46,26 @@ public class CsvTests
         Assert.Contains(",'=1+1,", LedgerCsv.Export(ledger));
     }
 
+    [Theory]
+    [InlineData("=1+1", ",'=1+1,")]
+    [InlineData("+27 82 555", ",'+27 82 555,")]
+    [InlineData("-5 refund", ",'-5 refund,")]
+    [InlineData("@SUM(A1)", ",'@SUM(A1),")]
+    [InlineData("\tTabbed", ",'\tTabbed,")]
+    [InlineData("\rReturn", ",\"'\rReturn\",")]
+    public void Every_formula_lead_char_is_guarded_and_unguarded_on_import(string name, string cell)
+    {
+        var ledger = new Ledger();
+        var month = LedgerOps.AddMonth(ledger, 2026, 1);
+        month.Entries.Add(new Entry { Id = "e", Kind = EntryKind.Expense, Name = name, Amount = 1m });
+
+        var csv = LedgerCsv.Export(ledger);
+        var back = LedgerCsv.Parse(csv);
+
+        Assert.Contains(cell, csv);
+        Assert.Equal(name, Assert.Single(back).Name);
+    }
+
     [Fact]
     public void Unknown_categories_are_created_without_budget()
     {

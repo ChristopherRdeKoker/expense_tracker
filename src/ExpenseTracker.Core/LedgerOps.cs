@@ -140,8 +140,8 @@ public static class LedgerOps
 
     public static bool HasCategoryNamed(IEnumerable<Category> categories, string name, string? exceptId = null)
     {
-        var key = MonthNames.Normalise(name);
-        var result = categories.Any(c => c.Id != exceptId && MonthNames.Normalise(c.Name) == key);
+        var key = NameKey.Normalise(name);
+        var result = categories.Any(c => c.Id != exceptId && NameKey.Normalise(c.Name) == key);
 
         return result;
     }
@@ -157,8 +157,10 @@ public static class LedgerOps
 
     public static string CleanName(string? name)
     {
-        var clean = string.Join(' ', (name ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
-        return clean.Length > MaxNameLength ? clean[..MaxNameLength] : clean;
+        var clean = NameKey.CollapseSpaces(name);
+        var result = clean.Length > MaxNameLength ? clean[..MaxNameLength] : clean;
+
+        return result;
     }
 
     private static void ValidateAmount(decimal amount)

@@ -119,4 +119,26 @@ public class LedgerOpsTests
 
         Assert.Equal(expected, LedgerOps.NameOrDefault(ledger, kind, name, categoryId));
     }
+
+    [Fact]
+    public void Add_entry_rounds_three_decimals_instead_of_refusing_them()
+    {
+        var month = new Month { Id = "m", Name = "M" };
+
+        var entry = LedgerOps.AddEntry(month, EntryKind.Expense, "x", 12.345m, null);
+
+        Assert.Equal(12.35m, entry.Amount);
+    }
+
+    [Fact]
+    public void Update_entry_rounds_three_decimals_instead_of_refusing_them()
+    {
+        TestData.Ledger(out var month);
+        var shop = month.Entries.First(e => e.Name == "Shop").Clone();
+        shop.Amount = 0.005m;
+
+        Assert.True(LedgerOps.UpdateEntry(month, shop));
+
+        Assert.Equal(0.01m, month.Entries.First(e => e.Id == shop.Id).Amount);
+    }
 }

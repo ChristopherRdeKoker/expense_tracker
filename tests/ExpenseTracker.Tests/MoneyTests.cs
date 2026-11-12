@@ -55,4 +55,19 @@ public class MoneyTests
     {
         Assert.False(Money.TryParse(input, out _));
     }
+
+    [Theory]
+    [InlineData("0", true)]
+    [InlineData("0.01", true)]
+    [InlineData("12.30", true)]
+    [InlineData("999999999.99", true)]
+    [InlineData("1000000000", true)]
+    [InlineData("1000000000.01", false)]
+    [InlineData("-0.01", false)]
+    [InlineData("12.345", false)]
+    [InlineData("0.001", false)]
+    public void IsStorable_means_zero_to_one_billion_in_whole_cents(string input, bool expected)
+    {
+        Assert.Equal(expected, Money.IsStorable(TestData.Dec(input)));
+    }
 }

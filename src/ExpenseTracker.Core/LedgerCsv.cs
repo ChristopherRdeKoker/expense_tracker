@@ -8,6 +8,7 @@ public sealed record CsvRow(string Month, EntryKind Kind, string Name, string Ca
 public static class LedgerCsv
 {
     public const string Header = "Month,Kind,Name,Category,Amount";
+    public const string FormulaLeadChars = "=+-@\t\r";
 
     public static string Export(Ledger ledger)
     {
@@ -58,7 +59,7 @@ public static class LedgerCsv
                 throw new LedgerFormatException($"CSV row {line}: unknown kind \"{r[1]}\" (use Expense, Recurring or Income).");
             }
             if (!decimal.TryParse(r[4], NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var amount)
-                || amount > Money.MaxAmount || Money.Round(amount) != amount)
+                || !Money.IsStorable(amount))
             {
                 throw new LedgerFormatException($"CSV row {line}: \"{r[4]}\" is not a valid amount.");
             }
@@ -82,7 +83,7 @@ public static class LedgerCsv
         var months = new Dictionary<string, Month>();
         foreach (var row in rows)
         {
-            var monthKey = MonthNames.Normalise(row.Month);
+            var monthKey = NameKey.Normalise(row.Month);
             if (!months.TryGetValue(monthKey, out var month))
             {
                 month = new Month { Id = Ids.New(), Name = LedgerOps.CleanName(row.Month) };
@@ -93,8 +94,8 @@ public static class LedgerCsv
             string? categoryId = null;
             if (row.Kind != EntryKind.Income && !string.IsNullOrWhiteSpace(row.Category))
             {
-                var key = MonthNames.Normalise(row.Category);
-                categoryId = (ledger.Categories.FirstOrDefault(c => MonthNames.Normalise(c.Name) == key)
+                var key = NameKey.Normalise(row.Category);
+                categoryId = (ledger.Categories.FirstOrDefault(c => NameKey.Normalise(c.Name) == key)
                               ?? LedgerOps.AddCategory(ledger, row.Category, 0m)).Id;
             }
             LedgerOps.AddEntry(month, row.Kind, row.Name, row.Amount, categoryId);
@@ -105,7 +106,7 @@ public static class LedgerCsv
 
     private static string Field(string value)
     {
-        if (value.Length > 0 && "=+-@\t\r".Contains(value[0]))
+        if (value.Length > 0 && FormulaLeadChars.Contains(value[0]))
         {
             value = "'" + value;
         }
@@ -115,7 +116,7 @@ public static class LedgerCsv
     }
 
     private static string Unguard(string value) =>
-        value.Length > 1 && value[0] == '\'' && "=+-@\t\r".Contains(value[1]) ? value[1..] : value;
+        value.Length > 1 && value[0] == '\'' && FormulaLeadChars.Contains(value[1]) ? value[1..] : value;
 
     private static List<List<string>> ReadRecords(string text)
     {

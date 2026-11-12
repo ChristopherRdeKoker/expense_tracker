@@ -104,6 +104,10 @@ public static class LedgerJson
 
     private static void CheckAmount(decimal amount, string what)
     {
+        if (Money.IsStorable(amount))
+        {
+            return;
+        }
         if (amount < 0) throw Fail($"{what} is negative ({Money.FormatPlain(amount)}).");
         if (amount > Money.MaxAmount) throw Fail($"{what} is larger than {Money.Format(Money.MaxAmount)}.");
         if (Money.Round(amount) != amount) throw Fail($"{what} has more than two decimals ({amount}).");
