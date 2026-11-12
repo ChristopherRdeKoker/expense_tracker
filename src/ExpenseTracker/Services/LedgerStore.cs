@@ -12,7 +12,7 @@ public enum NoticeTone
 
 public sealed record Notice(string Message, NoticeTone Tone, bool CanUndo = false, bool Sticky = false);
 
-public sealed class LedgerStore(BrowserBridge browser)
+public sealed class LedgerStore(ILedgerStorage storage, IToday today, TimeProvider time)
 {
     public const string StorageKey = "expense-tracker.v1";
     public const string BackupPrefix = "expense-tracker.v1.unreadable-";
@@ -35,12 +35,12 @@ public sealed class LedgerStore(BrowserBridge browser)
 
     public async Task InitAsync()
     {
-        Today = await browser.TodayAsync();
+        Today = await today.GetAsync();
 
         string? raw;
         try
         {
-            raw = await browser.LoadAsync(StorageKey);
+            raw = await storage.LoadAsync(StorageKey);
         }
         catch (JSException ex)
         {
@@ -66,7 +66,7 @@ public sealed class LedgerStore(BrowserBridge browser)
             }
             catch (LedgerFormatException ex)
             {
-                var backupKey = BackupPrefix + DateTime.UtcNow.ToString("yyyyMMdd'T'HHmmss'Z'");
+                var backupKey = BackupPrefix + time.GetUtcNow().UtcDateTime.ToString("yyyyMMdd'T'HHmmss'Z'");
                 var backedUp = await TrySaveRawAsync(backupKey, raw);
                 Ledger = Seed.Empty(Today.Year, Today.Month);
                 await PersistAsync();
@@ -293,7 +293,7 @@ public sealed class LedgerStore(BrowserBridge browser)
         }
         try
         {
-            await browser.SaveAsync(StorageKey, LedgerJson.Serialize(Ledger));
+            await storage.SaveAsync(StorageKey, LedgerJson.Serialize(Ledger));
             return true;
         }
         catch (JSException ex)
@@ -307,7 +307,7 @@ public sealed class LedgerStore(BrowserBridge browser)
     {
         try
         {
-            await browser.SaveAsync(key, raw);
+            await storage.SaveAsync(key, raw);
             return true;
         }
         catch (JSException)

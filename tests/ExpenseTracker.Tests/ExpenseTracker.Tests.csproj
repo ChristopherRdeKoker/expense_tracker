@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ExpenseTracker.Core\ExpenseTracker.Core.csproj" />
+    <ProjectReference Include="..\..\src\ExpenseTracker\ExpenseTracker.csproj" />
   </ItemGroup>
 
 </Project>
