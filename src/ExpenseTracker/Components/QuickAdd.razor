@@ -18,16 +18,15 @@
     <div class="quick-fields">
         <div class="field amount-field @(_error is null ? "" : "has-error")">
             <label for="qa-amount" class="field-label">Amount</label>
-            <div class="money-input">
-                <span class="money-prefix" aria-hidden="true">R</span>
+            <MoneyInput>
                 <input id="qa-amount" class="input input-amount" inputmode="decimal" autocomplete="off" enterkeyhint="done"
                        placeholder="0.00" aria-describedby="qa-hint" aria-invalid="@(_error is null ? "false" : "true")"
                        @bind="_amount" @bind:event="oninput" @onkeydown="OnAmountKey" data-testid="qa-amount" />
-            </div>
+            </MoneyInput>
         </div>
         <div class="field note-field">
             <label for="qa-note" class="field-label">Description <span class="optional">optional</span></label>
-            <input id="qa-note" class="input" maxlength="80" autocomplete="off" placeholder="@NotePlaceholder"
+            <input id="qa-note" class="input" maxlength="@LedgerOps.MaxNameLength" autocomplete="off" placeholder="@NotePlaceholder"
                    @bind="_note" @bind:event="oninput" @onkeydown="OnAmountKey" data-testid="qa-note" />
         </div>
     </div>
@@ -50,7 +49,7 @@
                     <span>@c.Name</span>
                 </button>
             }
-            <button type="button" class="chip chip-plain" @onclick="() => Add(null)">No category</button>
+            <button type="button" class="chip chip-plain" @onclick="() => Add(null)">@UiText.NoCategory</button>
         </div>
     }
 </section>
@@ -91,7 +90,7 @@
         {
             _error = string.IsNullOrWhiteSpace(_amount)
                 ? "Enter an amount first."
-                : $"“{_amount.Trim()}” is not an amount. Use numbers like 120 or 89.95.";
+                : UiText.NotAnAmount(_amount.Trim());
             await Browser.FocusAsync("qa-amount", select: true);
             return;
         }

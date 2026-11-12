@@ -1,0 +1,11 @@
+<div class="@WrapperClass">
+    <span class="money-prefix" aria-hidden="true">R</span>
+    @ChildContent
+</div>
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+    [Parameter] public bool IsSmall { get; set; }
+
+    private string WrapperClass => IsSmall ? "money-input money-input-small" : "money-input";
+}

@@ -1,0 +1,56 @@
+<div class="edit-grid" @onkeydown="OnKey">
+    <div class="field">
+        <label class="field-label" for="edit-name">Description</label>
+        <input id="edit-name" class="input" maxlength="@LedgerOps.MaxNameLength" @bind="Draft.Name" @bind:event="oninput" />
+    </div>
+    <div class="field">
+        <label class="field-label" for="edit-amount">Amount (R)</label>
+        <input id="edit-amount" class="input input-num" inputmode="decimal" @bind:get="AmountText" @bind:set="value => AmountTextChanged.InvokeAsync(value)" @bind:event="oninput" aria-invalid="@(Error is null ? "false" : "true")" />
+    </div>
+    <div class="field">
+        <label class="field-label" for="edit-kind">Type</label>
+        <select id="edit-kind" class="input select" @bind="Draft.Kind">
+            <option value="@EntryKind.Expense">Expense</option>
+            <option value="@EntryKind.Recurring">Recurring</option>
+            <option value="@EntryKind.Income">Income</option>
+        </select>
+    </div>
+    <div class="field">
+        <label class="field-label" for="edit-category">Category</label>
+        <CategorySelect Id="edit-category" Categories="Categories" Value="@(Draft.CategoryId ?? "")" ValueChanged="SetCategory" IsDisabled="@(Draft.Kind == EntryKind.Income)">
+            <Leading><option value="">@UiText.NoCategory</option></Leading>
+        </CategorySelect>
+    </div>
+    @if (Error is not null)
+    {
+        <p class="hint hint-error edit-error" role="alert">@Error</p>
+    }
+    <div class="edit-actions">
+        <button type="button" class="btn btn-quiet btn-small" @onclick="OnCancel">Cancel</button>
+        <button type="button" class="btn btn-primary btn-small" @onclick="OnSave" data-testid="save-edit">Save</button>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Entry Draft { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<Category> Categories { get; set; } = [];
+    [Parameter, EditorRequired] public string AmountText { get; set; } = "";
+    [Parameter, EditorRequired] public EventCallback<string> AmountTextChanged { get; set; }
+    [Parameter, EditorRequired] public string? Error { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnSave { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnCancel { get; set; }
+
+    private void SetCategory(string value) => Draft.CategoryId = value.Length == 0 ? null : value;
+
+    private async Task OnKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await OnSave.InvokeAsync();
+        }
+        else if (e.Key == "Escape")
+        {
+            await OnCancel.InvokeAsync();
+        }
+    }
+}

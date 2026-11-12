@@ -10,6 +10,8 @@ public static class Css
     public static string Percent(decimal fraction) =>
         (Math.Clamp(fraction, 0m, 1m) * 100m).ToString("0.##", CultureInfo.InvariantCulture) + "%";
 
+    public static string Tone(EntryKind kind) => kind == EntryKind.Income ? "tone-good" : "";
+
     public static string Number(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
 
     public static string State(BudgetState state) => state switch

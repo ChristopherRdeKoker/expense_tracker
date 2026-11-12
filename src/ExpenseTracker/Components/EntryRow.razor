@@ -1,0 +1,34 @@
+<Swatch Category="@(Entry.IsSpending ? Category : null)" />
+<div class="row-main">
+    <span class="row-name">@Name</span>
+    <span class="row-meta">@Meta</span>
+</div>
+<span class="row-amount @Css.Tone(Entry.Kind)">@Money.Format(Entry.Amount)</span>
+<div class="row-actions">
+    <button type="button" class="icon-btn" aria-label="@($"Edit {Entry.Name}")" @onclick="OnEdit">
+        <Icon Name="IconName.Edit" />
+    </button>
+    <button type="button" class="icon-btn icon-danger" aria-label="@($"Delete {Entry.Name}")" @onclick="OnDelete">
+        <Icon Name="IconName.Remove" />
+    </button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Entry Entry { get; set; } = default!;
+    [Parameter, EditorRequired] public Category? Category { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnEdit { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnDelete { get; set; }
+
+    private string Name => string.IsNullOrWhiteSpace(Entry.Name) ? "Untitled" : Entry.Name;
+
+    private string Meta
+    {
+        get
+        {
+            var categoryName = Category?.Name ?? UiText.NoCategory;
+            var result = Entry.Kind == EntryKind.Income ? "Income" : categoryName;
+
+            return result;
+        }
+    }
+}

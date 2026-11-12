@@ -17,28 +17,26 @@
                 <li class="budget-edit-row">
                     <Swatch Category="c" />
                     <label class="sr-only" for="@($"cat-name-{c.Id}")">Category name</label>
-                    <input id="@($"cat-name-{c.Id}")" class="input" maxlength="80" value="@c.Name"
+                    <input id="@($"cat-name-{c.Id}")" class="input" maxlength="@LedgerOps.MaxNameLength" value="@c.Name"
                            @onchange="e => Store.RenameCategoryAsync(c.Id, e.Value?.ToString() ?? string.Empty)" />
                     <label class="sr-only" for="@($"cat-budget-{c.Id}")">@($"Monthly budget for {c.Name}, in rand")</label>
-                    <div class="money-input money-input-small">
-                        <span class="money-prefix" aria-hidden="true">R</span>
+                    <MoneyInput IsSmall="true">
                         <input id="@($"cat-budget-{c.Id}")" class="input input-num" inputmode="decimal" value="@Money.FormatPlain(c.Budget)"
                                @onchange="e => SetBudget(c, e.Value?.ToString())" data-testid="@($"budget-{c.Name}")" />
-                    </div>
+                    </MoneyInput>
                     <button type="button" class="icon-btn icon-danger" aria-label="@($"Delete category {c.Name}")" @onclick="() => Store.DeleteCategoryAsync(c.Id)">
-                        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 6h12M8 6V4h4v2M6 6l1 10h6l1-10" class="icon-stroke" /></svg>
+                        <Icon Name="IconName.Trash" />
                     </button>
                 </li>
             }
         </ul>
         <div class="add-category" @onkeydown="OnNewKey">
             <label class="sr-only" for="new-cat-name">New category name</label>
-            <input id="new-cat-name" class="input" maxlength="80" placeholder="New category" @bind="_newName" @bind:event="oninput" />
+            <input id="new-cat-name" class="input" maxlength="@LedgerOps.MaxNameLength" placeholder="New category" @bind="_newName" @bind:event="oninput" />
             <label class="sr-only" for="new-cat-budget">New category monthly budget, in rand</label>
-            <div class="money-input money-input-small">
-                <span class="money-prefix" aria-hidden="true">R</span>
+            <MoneyInput IsSmall="true">
                 <input id="new-cat-budget" class="input input-num" inputmode="decimal" placeholder="0" @bind="_newBudget" @bind:event="oninput" />
-            </div>
+            </MoneyInput>
             <button type="button" class="btn btn-primary btn-small" @onclick="AddCategory">Add</button>
         </div>
         @if (_error is not null)

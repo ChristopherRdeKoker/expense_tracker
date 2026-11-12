@@ -1,0 +1,40 @@
+<svg class="@Class" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+    @switch (Name)
+    {
+        case IconName.Edit:
+            <path d="M13.5 3.5 16.5 6.5 7 16H4v-3l9.5-9.5Z" class="icon-stroke" />
+            break;
+        case IconName.Trash:
+            <path d="M4 6h12M8 6V4h4v2M6 6l1 10h6l1-10" class="icon-stroke" />
+            break;
+        case IconName.Remove:
+            <path d="m5.5 5.5 9 9M14.5 5.5l-9 9" class="icon-stroke" />
+            break;
+        case IconName.Close:
+            <path d="m5 5 10 10M15 5 5 15" class="icon-stroke" />
+            break;
+        case IconName.Plus:
+            <path d="M10 4v12M4 10h12" class="icon-stroke" />
+            break;
+        case IconName.Download:
+            <path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 14v2h12v-2" class="icon-stroke" />
+            break;
+        case IconName.Search:
+            <circle cx="9" cy="9" r="5.5" class="icon-stroke" />
+            <path d="m13 13 4 4" class="icon-stroke" />
+            break;
+        case IconName.Warning:
+            <path d="M10 2.5 18.5 17h-17L10 2.5Z" class="icon-stroke" />
+            <path d="M10 8v4M10 14.5v.5" class="icon-stroke" />
+            break;
+        case IconName.Check:
+            <circle cx="10" cy="10" r="7.5" class="icon-stroke" />
+            <path d="m6.5 10.2 2.3 2.3 4.7-5" class="icon-stroke" />
+            break;
+    }
+</svg>
+
+@code {
+    [Parameter, EditorRequired] public IconName Name { get; set; }
+    [Parameter] public string? Class { get; set; }
+}

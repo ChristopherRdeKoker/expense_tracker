@@ -5,7 +5,7 @@
     {
         <div class="rename">
             <label for="rename-month" class="sr-only">Month name</label>
-            <input id="rename-month" class="input input-title" maxlength="80" @bind="_draft" @bind:event="oninput" @onkeydown="OnKey" />
+            <input id="rename-month" class="input input-title" maxlength="@LedgerOps.MaxNameLength" @bind="_draft" @bind:event="oninput" @onkeydown="OnKey" />
             <button type="button" class="btn btn-primary btn-small" @onclick="Save">Save</button>
             <button type="button" class="btn btn-quiet btn-small" @onclick="() => _renaming = false">Cancel</button>
         </div>
@@ -15,10 +15,10 @@
         <h2 class="month-title" data-testid="month-title">@Month.Name</h2>
         <div class="month-actions">
             <button type="button" class="icon-btn" aria-label="@($"Rename {Month.Name}")" title="Rename month" @onclick="StartRename">
-                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M13.5 3.5 16.5 6.5 7 16H4v-3l9.5-9.5Z" class="icon-stroke" /></svg>
+                <Icon Name="IconName.Edit" />
             </button>
             <button type="button" class="icon-btn icon-danger" aria-label="@($"Delete {Month.Name}")" title="Delete month" @onclick="() => Store.DeleteMonthAsync(Month.Id)">
-                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 6h12M8 6V4h4v2M6 6l1 10h6l1-10" class="icon-stroke" /></svg>
+                <Icon Name="IconName.Trash" />
             </button>
         </div>
     }

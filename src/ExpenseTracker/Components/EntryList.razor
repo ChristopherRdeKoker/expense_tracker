@@ -5,23 +5,7 @@
         <h2 id="entries-title">Entries <span class="count">@Month.Entries.Count</span></h2>
     </div>
 
-    <div class="filters">
-        <div class="search">
-            <label for="entry-search" class="sr-only">Search entries</label>
-            <svg class="search-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="9" cy="9" r="5.5" class="icon-stroke" /><path d="m13 13 4 4" class="icon-stroke" /></svg>
-            <input id="entry-search" type="search" class="input" placeholder="Search" autocomplete="off"
-                   @bind="_query" @bind:event="oninput" data-testid="search" />
-        </div>
-        <label for="entry-filter" class="sr-only">Filter by category</label>
-        <select id="entry-filter" class="input select" @bind="_filter" data-testid="filter">
-            <option value="">All categories</option>
-            @foreach (var c in Store.Ledger.Categories)
-            {
-                <option value="@c.Id">@c.Name</option>
-            }
-            <option value="@NoCategory">No category</option>
-        </select>
-    </div>
+    <EntryFilters Categories="Store.Ledger.Categories" @bind-Query="_query" @bind-Filter="_filter" />
 
     @{
         var visible = Month.Entries.Where(Matches).ToList();
@@ -53,68 +37,19 @@
                 <div class="group-head">
                     <h3>@title</h3>
                     <span class="group-hint">@hint</span>
-                    <span class="group-total @(kind == EntryKind.Income ? "tone-good" : "")">@Money.Format(rows.Sum(e => e.Amount))</span>
+                    <span class="group-total @Css.Tone(kind)">@Money.Format(rows.Sum(e => e.Amount))</span>
                 </div>
                 <ul class="rows" aria-label="@title">
                     @foreach (var e in rows)
                     {
-                        var category = Store.Ledger.FindCategory(e.CategoryId);
                         <li class="row @(_editing?.Id == e.Id ? "is-editing" : "")" data-testid="entry-row">
                             @if (_editing?.Id == e.Id)
                             {
-                                <div class="edit-grid" @onkeydown="OnEditKey">
-                                    <div class="field">
-                                        <label class="field-label" for="edit-name">Description</label>
-                                        <input id="edit-name" class="input" maxlength="80" @bind="_editing.Name" @bind:event="oninput" />
-                                    </div>
-                                    <div class="field">
-                                        <label class="field-label" for="edit-amount">Amount (R)</label>
-                                        <input id="edit-amount" class="input input-num" inputmode="decimal" @bind="_editAmount" @bind:event="oninput" aria-invalid="@(_editError is null ? "false" : "true")" />
-                                    </div>
-                                    <div class="field">
-                                        <label class="field-label" for="edit-kind">Type</label>
-                                        <select id="edit-kind" class="input select" @bind="_editing.Kind">
-                                            <option value="@EntryKind.Expense">Expense</option>
-                                            <option value="@EntryKind.Recurring">Recurring</option>
-                                            <option value="@EntryKind.Income">Income</option>
-                                        </select>
-                                    </div>
-                                    <div class="field">
-                                        <label class="field-label" for="edit-category">Category</label>
-                                        <select id="edit-category" class="input select" @bind="EditCategory" disabled="@(_editing.Kind == EntryKind.Income)">
-                                            <option value="">No category</option>
-                                            @foreach (var c in Store.Ledger.Categories)
-                                            {
-                                                <option value="@c.Id">@c.Name</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    @if (_editError is not null)
-                                    {
-                                        <p class="hint hint-error edit-error" role="alert">@_editError</p>
-                                    }
-                                    <div class="edit-actions">
-                                        <button type="button" class="btn btn-quiet btn-small" @onclick="CancelEdit">Cancel</button>
-                                        <button type="button" class="btn btn-primary btn-small" @onclick="SaveEdit" data-testid="save-edit">Save</button>
-                                    </div>
-                                </div>
+                                <EntryEditor Draft="_editing" Categories="Store.Ledger.Categories" @bind-AmountText="_editAmount" Error="@_editError" OnSave="SaveEdit" OnCancel="CancelEdit" />
                             }
                             else
                             {
-                                <Swatch Category="@(e.Kind == EntryKind.Income ? null : category)" />
-                                <div class="row-main">
-                                    <span class="row-name">@(string.IsNullOrWhiteSpace(e.Name) ? "Untitled" : e.Name)</span>
-                                    <span class="row-meta">@(e.Kind == EntryKind.Income ? "Income" : category?.Name ?? "No category")</span>
-                                </div>
-                                <span class="row-amount @(e.Kind == EntryKind.Income ? "tone-good" : "")">@Money.Format(e.Amount)</span>
-                                <div class="row-actions">
-                                    <button type="button" class="icon-btn" aria-label="@($"Edit {e.Name}")" @onclick="() => StartEdit(e)">
-                                        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M13.5 3.5 16.5 6.5 7 16H4v-3l9.5-9.5Z" class="icon-stroke" /></svg>
-                                    </button>
-                                    <button type="button" class="icon-btn icon-danger" aria-label="@($"Delete {e.Name}")" @onclick="() => Store.DeleteEntryAsync(e.Id)">
-                                        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m5.5 5.5 9 9M14.5 5.5l-9 9" class="icon-stroke" /></svg>
-                                    </button>
-                                </div>
+                                <EntryRow Entry="e" Category="Store.Ledger.FindCategory(e.CategoryId)" OnEdit="() => StartEdit(e)" OnDelete="() => Store.DeleteEntryAsync(e.Id)" />
                             }
                         </li>
                     }
@@ -127,8 +62,6 @@
 @code {
     [Parameter, EditorRequired] public LedgerStore Store { get; set; } = default!;
     [Parameter, EditorRequired] public Month Month { get; set; } = default!;
-
-    private const string NoCategory = "__none";
 
     private static readonly (EntryKind, string, string)[] Groups =
     [
@@ -144,18 +77,6 @@
     private string? _editError;
     private string? _monthId;
 
-    private string EditCategory
-    {
-        get => _editing?.CategoryId ?? "";
-        set
-        {
-            if (_editing is not null)
-            {
-                _editing.CategoryId = value.Length == 0 ? null : value;
-            }
-        }
-    }
-
     protected override void OnParametersSet()
     {
         if (_monthId != Month.Id)
@@ -163,7 +84,7 @@
             _monthId = Month.Id;
             _editing = null;
         }
-        if (_filter.Length > 0 && _filter != NoCategory && Store.Ledger.FindCategory(_filter) is null)
+        if (_filter.Length > 0 && _filter != EntryFilters.NoCategoryFilter && Store.Ledger.FindCategory(_filter) is null)
         {
             _filter = "";
         }
@@ -172,19 +93,21 @@
     private bool Matches(Entry e)
     {
         var category = Store.Ledger.FindCategory(e.CategoryId);
-        if (_filter == NoCategory && (category is not null || e.Kind == EntryKind.Income))
+        if (_filter == EntryFilters.NoCategoryFilter && (category is not null || e.Kind == EntryKind.Income))
         {
             return false;
         }
-        if (_filter.Length > 0 && _filter != NoCategory && category?.Id != _filter)
+        if (_filter.Length > 0 && _filter != EntryFilters.NoCategoryFilter && category?.Id != _filter)
         {
             return false;
         }
         var q = _query.Trim();
-        return q.Length == 0
+        var isMatch = q.Length == 0
             || e.Name.Contains(q, StringComparison.OrdinalIgnoreCase)
             || (category?.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false)
             || Money.FormatPlain(e.Amount).Contains(q.Replace(" ", "").Replace(",", "."), StringComparison.Ordinal);
+
+        return isMatch;
     }
 
     private void ClearFilters()
@@ -217,7 +140,7 @@
         }
         if (!Money.TryParse(_editAmount, out var amount))
         {
-            _editError = $"“{_editAmount.Trim()}” is not an amount. Use numbers like 120 or 89.95.";
+            _editError = UiText.NotAnAmount(_editAmount.Trim());
             return;
         }
         _editing.Amount = amount;
@@ -225,17 +148,5 @@
         _editing = null;
         _editError = null;
         await Store.UpdateEntryAsync(saved);
-    }
-
-    private async Task OnEditKey(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            await SaveEdit();
-        }
-        else if (e.Key == "Escape")
-        {
-            CancelEdit();
-        }
     }
 }

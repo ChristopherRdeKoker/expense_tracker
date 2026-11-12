@@ -1,0 +1,19 @@
+<select id="@Id" class="input select" @bind:get="Value" @bind:set="value => ValueChanged.InvokeAsync(value)" disabled="@IsDisabled" @attributes="Attributes">
+    @Leading
+    @foreach (var category in Categories)
+    {
+        <option value="@category.Id">@category.Name</option>
+    }
+    @Trailing
+</select>
+
+@code {
+    [Parameter, EditorRequired] public string Id { get; set; } = "";
+    [Parameter, EditorRequired] public IReadOnlyList<Category> Categories { get; set; } = [];
+    [Parameter, EditorRequired] public string Value { get; set; } = "";
+    [Parameter, EditorRequired] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public bool IsDisabled { get; set; }
+    [Parameter] public RenderFragment? Leading { get; set; }
+    [Parameter] public RenderFragment? Trailing { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? Attributes { get; set; }
+}

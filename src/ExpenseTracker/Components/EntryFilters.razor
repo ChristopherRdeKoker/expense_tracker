@@ -1,0 +1,23 @@
+<div class="filters">
+    <div class="search">
+        <label for="entry-search" class="sr-only">Search entries</label>
+        <Icon Name="IconName.Search" Class="search-icon" />
+        <input id="entry-search" type="search" class="input" placeholder="Search" autocomplete="off"
+               @bind:get="Query" @bind:set="value => QueryChanged.InvokeAsync(value)" @bind:event="oninput" data-testid="search" />
+    </div>
+    <label for="entry-filter" class="sr-only">Filter by category</label>
+    <CategorySelect Id="entry-filter" Categories="Categories" Value="@Filter" ValueChanged="FilterChanged" data-testid="filter">
+        <Leading><option value="">All categories</option></Leading>
+        <Trailing><option value="@NoCategoryFilter">@UiText.NoCategory</option></Trailing>
+    </CategorySelect>
+</div>
+
+@code {
+    public const string NoCategoryFilter = "__none";
+
+    [Parameter, EditorRequired] public IReadOnlyList<Category> Categories { get; set; } = [];
+    [Parameter, EditorRequired] public string Query { get; set; } = "";
+    [Parameter, EditorRequired] public EventCallback<string> QueryChanged { get; set; }
+    [Parameter, EditorRequired] public string Filter { get; set; } = "";
+    [Parameter, EditorRequired] public EventCallback<string> FilterChanged { get; set; }
+}

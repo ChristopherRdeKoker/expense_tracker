@@ -37,7 +37,7 @@
                 {
                     <li>
                         <Swatch Category="s.Category" />
-                        <span class="legend-name">@(s.Category?.Name ?? "No category")</span>
+                        <span class="legend-name">@(s.Category?.Name ?? UiText.NoCategory)</span>
                         <span class="legend-amount">@Money.Format(s.Amount)</span>
                         <span class="legend-pct">@Math.Round(s.Fraction * 100m)%</span>
                     </li>
@@ -61,5 +61,5 @@
 
     private static string Describe(IReadOnlyList<CategorySlice> slices, decimal total) =>
         $"Spending by category, {Money.Format(total)} in total: " +
-        string.Join(", ", slices.Select(s => $"{s.Category?.Name ?? "No category"} {Math.Round(s.Fraction * 100m)}%"));
+        string.Join(", ", slices.Select(s => $"{s.Category?.Name ?? UiText.NoCategory} {Math.Round(s.Fraction * 100m)}%"));
 }
