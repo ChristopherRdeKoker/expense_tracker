@@ -28,7 +28,18 @@ dotnet publish src/ExpenseTracker -c Release -o publish
 python3 tools/serve.py publish/wwwroot --port 8733
 ```
 
-Then open `http://127.0.0.1:8733/apps/expenses/`. `tools/serve.py` serves the build under that path prefix with the production CSP, `X-Content-Type-Options: nosniff` and the precompressed `.br`/`.gz` files.
+Then open `http://127.0.0.1:8733/apps/expenses/`.
+
+The browser tests in `tests/e2e/` drive the served build with Playwright (`npm install` there first):
+
+```sh
+cd tests/e2e
+node e2e.mjs        # the full user flow, plus console, network and CSP checks
+node contrast.mjs   # WCAG text contrast in light and dark, phone and desktop
+node states.mjs     # screenshots of the edit, menu and recovery states
+```
+
+They read `BASE_URL` (default `http://127.0.0.1:8733/apps/expenses/`) and write screenshots to `SHOTS_DIR` (default `tests/e2e/out/shots`). `tools/serve.py` serves the build under that path prefix with the production CSP, `X-Content-Type-Options: nosniff` and the precompressed `.br`/`.gz` files.
 
 ## Hosting under `/apps/expenses/` without `<base>`
 
