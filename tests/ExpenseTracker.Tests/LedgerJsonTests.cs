@@ -72,4 +72,25 @@ public class LedgerJsonTests
         var ledger = LedgerJson.Deserialize("{\"version\":1,\"categories\":[],\"months\":[]}");
         Assert.Empty(ledger.Months);
     }
+
+    [Fact]
+    public void Round_trip_keeps_edge_amounts_and_awkward_text()
+    {
+        var ledger = new Ledger();
+        var category = LedgerOps.AddCategory(ledger, "Ünïcödé “quotes” \\ back", Money.MaxAmount);
+        var month = LedgerOps.AddMonth(ledger, 2026, 12);
+        LedgerOps.AddEntry(month, EntryKind.Expense, "</script><b>", 0.01m, category.Id);
+        LedgerOps.AddEntry(month, EntryKind.Recurring, "Zero", 0m, null);
+        LedgerOps.AddEntry(month, EntryKind.Income, "Twelve fifty", 12.50m, null);
+
+        var json = LedgerJson.Serialize(ledger);
+        var back = LedgerJson.Deserialize(json);
+
+        Assert.Equal(json, LedgerJson.Serialize(back));
+        Assert.Equal([0.01m, 0m, 12.50m], back.Months[0].Entries.Select(e => e.Amount));
+        Assert.Equal("</script><b>", back.Months[0].Entries[0].Name);
+        Assert.Equal(Money.MaxAmount, back.Categories[0].Budget);
+        Assert.Equal("Ünïcödé “quotes” \\ back", back.Categories[0].Name);
+        Assert.Equal(12.50m - 0.01m - 0m, LedgerMath.Totals(back.Months[0].Entries).LeftOver);
+    }
 }

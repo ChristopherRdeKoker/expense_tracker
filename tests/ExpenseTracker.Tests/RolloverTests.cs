@@ -54,4 +54,40 @@ public class RolloverTests
         Assert.Equal(450m, mar.Entries[0].Amount);
         Assert.Equal(["March 2026", "February 2026", "January 2026"], ledger.Months.Select(m => m.Name));
     }
+
+    [Fact]
+    public void Recurring_3500_plus_699_carry_as_4199_and_nothing_else_does()
+    {
+        var ledger = new Ledger();
+        var november = LedgerOps.AddMonth(ledger, 2026, 11);
+        LedgerOps.AddEntry(november, EntryKind.Income, "Salary", 20_000m, null);
+        LedgerOps.AddEntry(november, EntryKind.Recurring, "Rent", 3_500m, null);
+        LedgerOps.AddEntry(november, EntryKind.Recurring, "Fibre", 699m, null);
+        LedgerOps.AddEntry(november, EntryKind.Expense, "Shop", 100m, null);
+
+        var december = LedgerOps.AddMonth(ledger, 2026, 11);
+        var totals = LedgerMath.Totals(december.Entries);
+
+        Assert.Equal("December 2026", december.Name);
+        Assert.Equal(0m, totals.Income);
+        Assert.Equal(4_199m, totals.Recurring);
+        Assert.Equal(0m, totals.Expenses);
+        Assert.Equal(-4_199m, totals.LeftOver);
+        Assert.Equal(20_000m - 3_500m - 699m - 100m, LedgerMath.Totals(november.Entries).LeftOver);
+    }
+
+    [Fact]
+    public void Recurring_amounts_with_cents_carry_unchanged_across_three_months()
+    {
+        var ledger = new Ledger();
+        var first = LedgerOps.AddMonth(ledger, 2026, 11);
+        LedgerOps.AddEntry(first, EntryKind.Recurring, "Gym", 449.99m, null);
+        LedgerOps.AddEntry(first, EntryKind.Recurring, "Phone", 0.01m, null);
+
+        LedgerOps.AddMonth(ledger, 2026, 11);
+        var third = LedgerOps.AddMonth(ledger, 2026, 11);
+
+        Assert.Equal("January 2027", third.Name);
+        Assert.Equal(450.00m, LedgerMath.Totals(third.Entries).Recurring);
+    }
 }

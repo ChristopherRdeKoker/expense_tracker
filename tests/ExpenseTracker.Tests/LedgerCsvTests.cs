@@ -91,4 +91,37 @@ public class LedgerCsvTests
         var ex = Assert.Throws<LedgerFormatException>(() => LedgerCsv.Parse(csv));
         Assert.Contains(expected, ex.Message);
     }
+
+    [Fact]
+    public void Round_trip_keeps_edge_amounts_and_awkward_text()
+    {
+        var ledger = new Ledger();
+        var category = LedgerOps.AddCategory(ledger, "=Tax, \"VAT\"", 0m);
+        var month = LedgerOps.AddMonth(ledger, 2026, 1);
+        LedgerOps.RenameMonth(ledger, month.Id, "Jan, 2026");
+        LedgerOps.AddEntry(month, EntryKind.Expense, "Café — R½ “quoted”", 0m, category.Id);
+        LedgerOps.AddEntry(month, EntryKind.Expense, "One cent", 0.01m, null);
+        LedgerOps.AddEntry(month, EntryKind.Income, "Cap", Money.MaxAmount, null);
+        LedgerOps.AddEntry(month, EntryKind.Expense, "Just under", 999_999_999.99m, null);
+
+        var csv = LedgerCsv.Export(ledger);
+        var back = LedgerCsv.ToLedger(LedgerCsv.Parse(csv));
+
+        Assert.Equal(csv, LedgerCsv.Export(back));
+        var entries = Assert.Single(back.Months).Entries;
+        Assert.Equal([0m, 0.01m, Money.MaxAmount, 999_999_999.99m], entries.Select(e => e.Amount));
+        Assert.Equal("Café — R½ “quoted”", entries[0].Name);
+        Assert.Equal("=Tax, \"VAT\"", back.FindCategory(entries[0].CategoryId)!.Name);
+        Assert.Equal("Jan, 2026", back.Months[0].Name);
+        Assert.Equal(0m + 0.01m + 999_999_999.99m, LedgerMath.Totals(entries).Spent);
+    }
+
+    [Fact]
+    public void Import_collapses_a_line_break_inside_a_quoted_name_to_a_space()
+    {
+        var rows = LedgerCsv.Parse($"{LedgerCsv.Header}\r\nJan,Expense,\"line one\nline two\",,5.00\r\n");
+
+        Assert.Equal("line one\nline two", Assert.Single(rows).Name);
+        Assert.Equal("line one line two", LedgerCsv.ToLedger(rows).Months[0].Entries[0].Name);
+    }
 }

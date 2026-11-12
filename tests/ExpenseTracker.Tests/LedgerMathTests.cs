@@ -118,4 +118,156 @@ public class LedgerMathTests
         LedgerOps.AddEntry(month, EntryKind.Income, "Pay", 10m, null);
         Assert.Empty(LedgerMath.Breakdown(ledger, month));
     }
+
+    private static Month MonthOf(params (EntryKind Kind, decimal Amount, string? CategoryId)[] rows)
+    {
+        var month = new Month { Id = "m", Name = "M" };
+        foreach (var (kind, amount, categoryId) in rows)
+        {
+            LedgerOps.AddEntry(month, kind, "x", amount, categoryId);
+        }
+
+        return month;
+    }
+
+    private static BudgetUsage Usage(decimal spent, decimal budget) =>
+        new(new Category { Id = "c", Name = "C", Budget = budget }, spent, budget);
+
+    [Fact]
+    public void Income_10000_less_recurring_3500_less_expenses_1000_50_and_250_25_leaves_5249_25()
+    {
+        var month = MonthOf(
+            (EntryKind.Income, 10_000m, null),
+            (EntryKind.Recurring, 3_500m, null),
+            (EntryKind.Expense, 1_000.50m, null),
+            (EntryKind.Expense, 250.25m, null));
+
+        var totals = LedgerMath.Totals(month.Entries);
+
+        Assert.Equal(1_250.75m, totals.Expenses);
+        Assert.Equal(4_750.75m, totals.Spent);
+        Assert.Equal(5_249.25m, totals.LeftOver);
+    }
+
+    [Fact]
+    public void Cents_0_10_plus_0_20_total_exactly_0_30()
+    {
+        var month = MonthOf((EntryKind.Expense, 0.10m, null), (EntryKind.Expense, 0.20m, null));
+
+        Assert.Equal(0.30m, LedgerMath.Totals(month.Entries).Expenses);
+    }
+
+    [Fact]
+    public void Three_incomes_of_one_billion_total_3_billion_past_the_per_entry_cap()
+    {
+        const decimal threeBillion = 3 * Money.MaxAmount;
+        var month = MonthOf(
+            (EntryKind.Income, Money.MaxAmount, null),
+            (EntryKind.Income, Money.MaxAmount, null),
+            (EntryKind.Income, Money.MaxAmount, null));
+
+        Assert.Equal(threeBillion, LedgerMath.Totals(month.Entries).Income);
+    }
+
+    [Fact]
+    public void Income_0_01_less_two_billion_spent_leaves_minus_1_999_999_999_99()
+    {
+        var month = MonthOf(
+            (EntryKind.Income, 0.01m, null),
+            (EntryKind.Expense, Money.MaxAmount, null),
+            (EntryKind.Recurring, Money.MaxAmount, null));
+
+        Assert.Equal(-1_999_999_999.99m, LedgerMath.Totals(month.Entries).LeftOver);
+    }
+
+    [Fact]
+    public void Zero_amount_entries_add_nothing()
+    {
+        var month = MonthOf((EntryKind.Income, 0m, null), (EntryKind.Expense, 0m, null));
+        var totals = LedgerMath.Totals(month.Entries);
+
+        Assert.Equal(0m, totals.Spent);
+        Assert.Equal(0m, totals.LeftOver);
+    }
+
+    [Theory]
+    [InlineData("1", "3", "33.3")]
+    [InlineData("2", "3", "66.7")]
+    [InlineData("0.05", "100", "0.1")]
+    [InlineData("0.04", "100", "0.0")]
+    [InlineData("1234.56", "1000", "123.5")]
+    [InlineData("0", "500", "0.0")]
+    public void Percent_is_spent_over_budget_rounded_to_one_decimal_half_away_from_zero(string spent, string budget, string percent)
+    {
+        Assert.Equal(TestData.Dec(percent), Usage(TestData.Dec(spent), TestData.Dec(budget)).Percent);
+    }
+
+    [Theory]
+    [InlineData("849.99", "1000", BudgetState.Near)]
+    [InlineData("849.49", "1000", BudgetState.Under)]
+    [InlineData("850", "1000", BudgetState.Near)]
+    [InlineData("1000", "1000", BudgetState.Near)]
+    [InlineData("1001", "1000", BudgetState.Over)]
+    [InlineData("1000.01", "1000", BudgetState.Near)]
+    [InlineData("5", "0", BudgetState.NoBudget)]
+    public void State_follows_the_rounded_percent_85_near_and_above_100_over(string spent, string budget, BudgetState state)
+    {
+        Assert.Equal(state, Usage(TestData.Dec(spent), TestData.Dec(budget)).State);
+    }
+
+    [Theory]
+    [InlineData("250", "1000", "0.25")]
+    [InlineData("1234.56", "1000", "1")]
+    [InlineData("0", "1000", "0")]
+    [InlineData("10", "0", "0")]
+    public void Bar_fraction_is_spent_over_budget_capped_at_one(string spent, string budget, string fraction)
+    {
+        Assert.Equal(TestData.Dec(fraction), Usage(TestData.Dec(spent), TestData.Dec(budget)).BarFraction);
+    }
+
+    [Fact]
+    public void Budget_1000_less_spent_1234_56_remains_minus_234_56()
+    {
+        Assert.Equal(-234.56m, Usage(1_234.56m, 1_000m).Remaining);
+    }
+
+    [Fact]
+    public void Overall_is_300_plus_600_spent_of_1000_plus_500_budget_ignoring_unbudgeted_999()
+    {
+        var ledger = new Ledger();
+        var food = LedgerOps.AddCategory(ledger, "Food", 1_000m);
+        var fuel = LedgerOps.AddCategory(ledger, "Fuel", 500m);
+        var other = LedgerOps.AddCategory(ledger, "Other", 0m);
+        var month = LedgerOps.AddMonth(ledger, 2026, 1);
+        LedgerOps.AddEntry(month, EntryKind.Expense, "a", 300m, food.Id);
+        LedgerOps.AddEntry(month, EntryKind.Recurring, "b", 600m, fuel.Id);
+        LedgerOps.AddEntry(month, EntryKind.Expense, "c", 999m, other.Id);
+
+        var overall = LedgerMath.Overall(ledger, month)!;
+
+        Assert.Equal(900m, overall.Spent);
+        Assert.Equal(1_500m, overall.Budget);
+        Assert.Equal(60.0m, overall.Percent);
+    }
+
+    [Fact]
+    public void Breakdown_of_100_and_200_and_300_is_one_sixth_two_sixths_three_sixths()
+    {
+        var ledger = new Ledger();
+        var a = LedgerOps.AddCategory(ledger, "A", 0m);
+        var b = LedgerOps.AddCategory(ledger, "B", 0m);
+        var month = LedgerOps.AddMonth(ledger, 2026, 1);
+        LedgerOps.AddEntry(month, EntryKind.Expense, "x", 100m, a.Id);
+        LedgerOps.AddEntry(month, EntryKind.Recurring, "y", 200m, b.Id);
+        LedgerOps.AddEntry(month, EntryKind.Expense, "z", 300m, null);
+        LedgerOps.AddEntry(month, EntryKind.Income, "pay", 5_000m, null);
+
+        var slices = LedgerMath.Breakdown(ledger, month);
+
+        Assert.Equal([300m, 200m, 100m], slices.Select(s => s.Amount));
+        Assert.Equal(300m / 600m, slices[0].Fraction);
+        Assert.Equal(200m / 600m, slices[1].Fraction);
+        Assert.Equal(100m / 600m, slices[2].Fraction);
+        Assert.Null(slices[0].Category);
+    }
 }
