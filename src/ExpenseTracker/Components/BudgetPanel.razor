@@ -135,9 +135,8 @@
             _error = $"“{_newBudget}” is not a valid budget. Use numbers like 2500.";
             return;
         }
-        var before = Store.Ledger.Categories.Count;
-        await Store.AddCategoryAsync(_newName, budget);
-        if (Store.Ledger.Categories.Count > before)
+        var isAdded = await Store.AddCategoryAsync(_newName, budget);
+        if (isAdded)
         {
             _error = null;
             _newName = "";

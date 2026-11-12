@@ -242,4 +242,17 @@ public class LedgerStoreTests
         Assert.Equal("May 2026", store.SelectedMonth!.Name);
         Assert.False(store.ShowingSample);
     }
+
+    [Fact]
+    public async Task Add_category_reports_whether_the_change_was_applied()
+    {
+        var store = await LoadedStore();
+
+        Assert.True(await store.AddCategoryAsync("Pets", 300m));
+        Assert.False(await store.AddCategoryAsync(" PETS ", 0m));
+        _storage.SaveError = "QuotaExceededError";
+        Assert.True(await store.AddCategoryAsync("Gifts", 0m));
+
+        Assert.Equal(Seed.DefaultCategories.Length + 2, store.Ledger.Categories.Count);
+    }
 }

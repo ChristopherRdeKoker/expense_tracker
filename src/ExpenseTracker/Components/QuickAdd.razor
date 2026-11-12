@@ -32,7 +32,7 @@
     </div>
 
     <p id="qa-hint" class="hint @(_error is null ? "" : "hint-error")" aria-live="polite">
-        @(_error ?? (_kind == EntryKind.Income ? "Then tap Add income." : "Then tap a category to add it."))
+        @Hint
     </p>
 
     @if (_kind == EntryKind.Income)
@@ -70,6 +70,10 @@
     private string _note = "";
     private string? _error;
     private string? _lastCategory;
+
+    private string NextStep => _kind == EntryKind.Income ? "Then tap Add income." : "Then tap a category to add it.";
+
+    private string Hint => _error ?? NextStep;
 
     private string NotePlaceholder => _kind switch
     {
@@ -116,13 +120,14 @@
         {
             await Add(_lastCategory);
         }
+        else if (Money.TryParse(_amount, out _))
+        {
+            _error = "Now tap a category.";
+        }
         else
         {
-            _error = Money.TryParse(_amount, out _) ? "Now tap a category." : null;
-            if (_error is null)
-            {
-                await Add(null);
-            }
+            _error = null;
+            await Add(null);
         }
     }
 }

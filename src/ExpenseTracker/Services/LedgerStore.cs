@@ -143,7 +143,7 @@ public sealed class LedgerStore(ILedgerStorage storage, IToday today, TimeProvid
 
     public Task RenameCategoryAsync(string categoryId, string name) => ApplyAsync(l => LedgerOps.RenameCategory(l, categoryId, name));
 
-    public Task AddCategoryAsync(string name, decimal budget) => ApplyAsync(l => LedgerOps.AddCategory(l, name, budget));
+    public Task<bool> AddCategoryAsync(string name, decimal budget) => ApplyAsync(l => LedgerOps.AddCategory(l, name, budget));
 
     public Task DeleteCategoryAsync(string categoryId)
     {
@@ -169,14 +169,10 @@ public sealed class LedgerStore(ILedgerStorage storage, IToday today, TimeProvid
                 ? LedgerCsv.ToLedger(LedgerCsv.Parse(text), Ledger.Categories)
                 : LedgerJson.Deserialize(text);
         }
-        catch (LedgerFormatException ex)
+        catch (Exception ex) when (ex is LedgerFormatException or ArgumentException)
         {
-            SetNotice(new Notice($"Import of “{fileName}” rejected. {ex.Message} Your data was not changed.", NoticeTone.Error, Sticky: true));
-            return;
-        }
-        catch (ArgumentException ex)
-        {
-            SetNotice(new Notice($"Import of “{fileName}” rejected: {ex.Message} Your data was not changed.", NoticeTone.Error, Sticky: true));
+            var separator = ex is LedgerFormatException ? "." : ":";
+            SetNotice(new Notice($"Import of “{fileName}” rejected{separator} {ex.Message} Your data was not changed.", NoticeTone.Error, Sticky: true));
             return;
         }
 
@@ -209,7 +205,7 @@ public sealed class LedgerStore(ILedgerStorage storage, IToday today, TimeProvid
 
     public string ExportCsv() => LedgerCsv.Export(Ledger);
 
-    private async Task ApplyAsync(Action<Ledger> change, string? undoMessage = null, string? confirm = null)
+    private async Task<bool> ApplyAsync(Action<Ledger> change, string? undoMessage = null, string? confirm = null)
     {
         var snapshot = LedgerJson.Serialize(Ledger);
         var selected = SelectedMonthId;
@@ -223,7 +219,7 @@ public sealed class LedgerStore(ILedgerStorage storage, IToday today, TimeProvid
             Ledger = LedgerJson.Deserialize(snapshot);
             SelectedMonthId = selected;
             SetNotice(new Notice(ex.Message, NoticeTone.Error));
-            return;
+            return false;
         }
 
         if (undoMessage is not null)
@@ -248,6 +244,8 @@ public sealed class LedgerStore(ILedgerStorage storage, IToday today, TimeProvid
             }
         }
         Changed?.Invoke();
+
+        return true;
     }
 
     private void SetNotice(Notice notice)
