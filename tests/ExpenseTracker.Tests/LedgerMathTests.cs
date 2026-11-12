@@ -203,14 +203,16 @@ public class LedgerMathTests
     }
 
     [Theory]
-    [InlineData("849.99", "1000", BudgetState.Near)]
+    [InlineData("849.99", "1000", BudgetState.Under)]
     [InlineData("849.49", "1000", BudgetState.Under)]
     [InlineData("850", "1000", BudgetState.Near)]
     [InlineData("1000", "1000", BudgetState.Near)]
     [InlineData("1001", "1000", BudgetState.Over)]
-    [InlineData("1000.01", "1000", BudgetState.Near)]
+    [InlineData("1000.01", "1000", BudgetState.Over)]
+    [InlineData("0.01", "0.01", BudgetState.Near)]
+    [InlineData("0.02", "0.01", BudgetState.Over)]
     [InlineData("5", "0", BudgetState.NoBudget)]
-    public void State_follows_the_rounded_percent_85_near_and_above_100_over(string spent, string budget, BudgetState state)
+    public void State_follows_the_exact_amounts_85_percent_near_and_any_cent_over_budget_over(string spent, string budget, BudgetState state)
     {
         Assert.Equal(state, Usage(TestData.Dec(spent), TestData.Dec(budget)).State);
     }

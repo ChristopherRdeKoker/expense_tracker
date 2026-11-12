@@ -10,11 +10,11 @@ public sealed record BudgetUsage(Category Category, decimal Spent, decimal Budge
 
     public decimal BarFraction => Budget > 0 ? Math.Min(1m, Spent / Budget) : 0m;
 
-    public BudgetState State => Percent switch
+    public BudgetState State => Budget switch
     {
-        null => BudgetState.NoBudget,
-        > 100m => BudgetState.Over,
-        >= NearThreshold => BudgetState.Near,
+        <= 0m => BudgetState.NoBudget,
+        _ when Spent > Budget => BudgetState.Over,
+        _ when Spent * 100m >= NearThreshold * Budget => BudgetState.Near,
         _ => BudgetState.Under
     };
 }
