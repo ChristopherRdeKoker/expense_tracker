@@ -1,5 +1,5 @@
 <div class="notice-region" aria-live="polite" aria-atomic="true">
-    @if (Store.Notice is { } notice)
+    @if (Notice is { } notice)
     {
         <div class="notice notice-@notice.Tone.ToString().ToLowerInvariant()" role="@(notice.Tone == NoticeTone.Error ? "alert" : "status")" data-testid="notice">
             <svg class="notice-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
@@ -17,9 +17,9 @@
             <p>@notice.Message</p>
             @if (notice.CanUndo)
             {
-                <button type="button" class="btn btn-small btn-quiet" @onclick="Store.UndoAsync">Undo</button>
+                <button type="button" class="btn btn-small btn-quiet" @onclick="OnUndo">Undo</button>
             }
-            <button type="button" class="icon-btn" aria-label="Dismiss message" @onclick="Store.DismissNotice">
+            <button type="button" class="icon-btn" aria-label="Dismiss message" @onclick="OnDismiss">
                 <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m5 5 10 10M15 5 5 15" class="icon-stroke" /></svg>
             </button>
         </div>
@@ -27,5 +27,7 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public LedgerStore Store { get; set; } = default!;
+    [Parameter, EditorRequired] public Notice? Notice { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnUndo { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnDismiss { get; set; }
 }

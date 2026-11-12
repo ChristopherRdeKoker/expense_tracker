@@ -1,5 +1,5 @@
 @{
-    var slices = LedgerMath.Breakdown(Store.Ledger, Month);
+    var slices = LedgerMath.Breakdown(Ledger, Month);
     var total = slices.Sum(s => s.Amount);
 }
 <section class="card chart" aria-labelledby="chart-title">
@@ -48,7 +48,7 @@
 </section>
 
 @code {
-    [Parameter, EditorRequired] public LedgerStore Store { get; set; } = default!;
+    [Parameter, EditorRequired] public Ledger Ledger { get; set; } = default!;
     [Parameter, EditorRequired] public Month Month { get; set; } = default!;
 
     private const double Radius = 46;

@@ -1,5 +1,6 @@
 @implements IDisposable
 @inject LedgerStore Store
+@inject IDomInterop Browser
 
 @if (!Store.IsLoaded)
 {
@@ -23,7 +24,7 @@ else
             <DataMenu Store="Store" />
         </header>
 
-        <NoticeBar Store="Store" />
+        <NoticeBar Notice="Store.Notice" OnUndo="Store.UndoAsync" OnDismiss="Store.DismissNotice" />
 
         @if (Store.ShowingSample)
         {
@@ -36,20 +37,20 @@ else
             </div>
         }
 
-        <MonthTabs Store="Store" />
+        <MonthTabs Months="Store.Ledger.Months" SelectedId="@Store.SelectedMonth?.Id" OnSelect="Store.Select" OnAdd="AddMonthAsync" />
 
         @if (Store.SelectedMonth is { } month)
         {
             <main id="month-panel" class="layout" role="tabpanel" aria-labelledby="@($"tab-{month.Id}")">
                 <div class="area-head"><MonthHeader Store="Store" Month="month" /></div>
-                <div class="area-summary"><SummaryCards Store="Store" Month="month" /></div>
+                <div class="area-summary"><SummaryCards Ledger="Store.Ledger" Month="month" /></div>
                 <div class="col col-main">
                     <div class="area-quick"><QuickAdd Store="Store" Month="month" /></div>
                     <div class="area-entries"><EntryList Store="Store" Month="month" /></div>
                 </div>
                 <div class="col col-side">
                     <div class="area-budgets"><BudgetPanel Store="Store" Month="month" /></div>
-                    <div class="area-chart"><SpendingChart Store="Store" Month="month" /></div>
+                    <div class="area-chart"><SpendingChart Ledger="Store.Ledger" Month="month" /></div>
                 </div>
             </main>
         }
@@ -76,6 +77,15 @@ else
     }
 
     private void OnChanged() => StateHasChanged();
+
+    private async Task AddMonthAsync()
+    {
+        await Store.AddMonthAsync();
+        if (Store.SelectedMonth is { } month)
+        {
+            await Browser.FocusAsync($"tab-{month.Id}");
+        }
+    }
 
     public void Dispose() => Store.Changed -= OnChanged;
 }
