@@ -58,7 +58,6 @@ public static class LedgerJson
         }
 
         var categoryIds = new HashSet<string>();
-        var categoryNames = new HashSet<string>();
         for (var i = 0; i < ledger.Categories.Count; i++)
         {
             var c = ledger.Categories[i];
@@ -68,7 +67,7 @@ public static class LedgerJson
             if (!categoryIds.Add(c.Id)) throw Fail($"{label} reuses the id \"{c.Id}\".");
             if (string.IsNullOrWhiteSpace(c.Name)) throw Fail($"{label} has no name.");
             if (c.Name.Length > LedgerOps.MaxNameLength) throw Fail($"{label} has a name longer than {LedgerOps.MaxNameLength} characters.");
-            if (!categoryNames.Add(MonthNames.Normalise(c.Name))) throw Fail($"Two categories are called \"{c.Name}\".");
+            if (LedgerOps.HasCategoryNamed(ledger.Categories.Take(i), c.Name)) throw Fail($"Two categories are called \"{c.Name}\".");
             CheckAmount(c.Budget, $"{label} (\"{c.Name}\") budget");
             if (c.Color < 0 || c.Color >= Palette.Size) throw Fail($"{label} (\"{c.Name}\") has colour {c.Color}; it must be 0 to {Palette.Size - 1}.");
         }

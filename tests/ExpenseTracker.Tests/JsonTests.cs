@@ -59,6 +59,14 @@ public class JsonTests
     }
 
     [Fact]
+    public void Two_categories_with_the_same_name_name_the_second_spelling()
+    {
+        var ex = Assert.Throws<LedgerFormatException>(() => LedgerJson.Deserialize(
+            "{\"version\":1,\"categories\":[{\"id\":\"a\",\"name\":\"Food\"},{\"id\":\"b\",\"name\":\" FOOD \"}],\"months\":[]}"));
+        Assert.Equal("This is not valid expense data: Two categories are called \" FOOD \".", ex.Message);
+    }
+
+    [Fact]
     public void A_valid_empty_ledger_is_accepted()
     {
         var ledger = LedgerJson.Deserialize("{\"version\":1,\"categories\":[],\"months\":[]}");

@@ -1,3 +1,4 @@
+using System.Globalization;
 using ExpenseTracker.Core;
 
 namespace ExpenseTracker.Tests;
@@ -18,4 +19,6 @@ internal static class TestData
         LedgerOps.AddEntry(month, EntryKind.Expense, "Mystery", 99.25m, null);
         return ledger;
     }
+
+    public static decimal Dec(string text) => decimal.Parse(text, CultureInfo.InvariantCulture);
 }

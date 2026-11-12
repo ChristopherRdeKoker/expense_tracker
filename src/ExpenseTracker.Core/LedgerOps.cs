@@ -75,6 +75,21 @@ public static class LedgerOps
         return true;
     }
 
+    public static bool DeleteEntry(Month month, string entryId)
+    {
+        var isDeleted = month.Entries.RemoveAll(e => e.Id == entryId) > 0;
+
+        return isDeleted;
+    }
+
+    public static string NameOrDefault(Ledger ledger, EntryKind kind, string? name, string? categoryId)
+    {
+        var fallback = ledger.FindCategory(categoryId)?.Name ?? kind.ToString();
+        var result = string.IsNullOrWhiteSpace(name) ? fallback : name;
+
+        return result;
+    }
+
     public static Category AddCategory(Ledger ledger, string name, decimal budget)
     {
         var clean = CleanName(name);
@@ -82,7 +97,7 @@ public static class LedgerOps
         {
             throw new ArgumentException("A category needs a name.");
         }
-        if (ledger.Categories.Any(c => MonthNames.Normalise(c.Name) == MonthNames.Normalise(clean)))
+        if (HasCategoryNamed(ledger.Categories, clean))
         {
             throw new ArgumentException($"There is already a category called \"{clean}\".");
         }
@@ -92,6 +107,43 @@ public static class LedgerOps
         var category = new Category { Id = Ids.New(), Name = clean, Budget = Money.Round(budget), Color = color };
         ledger.Categories.Add(category);
         return category;
+    }
+
+    public static bool RenameCategory(Ledger ledger, string categoryId, string name)
+    {
+        var category = ledger.FindCategory(categoryId);
+        var clean = CleanName(name);
+        if (category is null || clean.Length == 0)
+        {
+            return false;
+        }
+        if (HasCategoryNamed(ledger.Categories, clean, categoryId))
+        {
+            throw new ArgumentException($"There is already a category called \"{clean}\".");
+        }
+        category.Name = clean;
+
+        return true;
+    }
+
+    public static bool SetBudget(Ledger ledger, string categoryId, decimal budget)
+    {
+        var category = ledger.FindCategory(categoryId);
+        if (category is null)
+        {
+            return false;
+        }
+        category.Budget = Money.Round(budget);
+
+        return true;
+    }
+
+    public static bool HasCategoryNamed(IEnumerable<Category> categories, string name, string? exceptId = null)
+    {
+        var key = MonthNames.Normalise(name);
+        var result = categories.Any(c => c.Id != exceptId && MonthNames.Normalise(c.Name) == key);
+
+        return result;
     }
 
     public static void DeleteCategory(Ledger ledger, string categoryId)

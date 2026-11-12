@@ -127,7 +127,7 @@ public sealed class LedgerStore(ILedgerStorage storage, IToday today, TimeProvid
         {
             return Task.CompletedTask;
         }
-        var label = string.IsNullOrWhiteSpace(name) ? Ledger.FindCategory(categoryId)?.Name ?? kind.ToString() : name;
+        var label = LedgerOps.NameOrDefault(Ledger, kind, name, categoryId);
         return ApplyAsync(_ => LedgerOps.AddEntry(month, kind, label, amount, categoryId), confirm: $"Added {Money.Format(amount)} · {LedgerOps.CleanName(label)}.");
     }
 
@@ -145,32 +145,12 @@ public sealed class LedgerStore(ILedgerStorage storage, IToday today, TimeProvid
         {
             return Task.CompletedTask;
         }
-        return ApplyAsync(_ => month.Entries.Remove(entry), $"Deleted “{entry.Name}”.");
+        return ApplyAsync(_ => LedgerOps.DeleteEntry(month, entry.Id), $"Deleted “{entry.Name}”.");
     }
 
-    public Task SetBudgetAsync(string categoryId, decimal budget) => ApplyAsync(l =>
-    {
-        var c = l.FindCategory(categoryId);
-        if (c is not null)
-        {
-            c.Budget = Money.Round(budget);
-        }
-    });
+    public Task SetBudgetAsync(string categoryId, decimal budget) => ApplyAsync(l => LedgerOps.SetBudget(l, categoryId, budget));
 
-    public Task RenameCategoryAsync(string categoryId, string name) => ApplyAsync(l =>
-    {
-        var c = l.FindCategory(categoryId);
-        var clean = LedgerOps.CleanName(name);
-        if (c is null || clean.Length == 0)
-        {
-            return;
-        }
-        if (l.Categories.Any(o => o.Id != categoryId && MonthNames.Normalise(o.Name) == MonthNames.Normalise(clean)))
-        {
-            throw new ArgumentException($"There is already a category called \"{clean}\".");
-        }
-        c.Name = clean;
-    });
+    public Task RenameCategoryAsync(string categoryId, string name) => ApplyAsync(l => LedgerOps.RenameCategory(l, categoryId, name));
 
     public Task AddCategoryAsync(string name, decimal budget) => ApplyAsync(l => LedgerOps.AddCategory(l, name, budget));
 
