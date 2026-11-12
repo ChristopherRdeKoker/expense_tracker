@@ -34,7 +34,7 @@ Then open `http://127.0.0.1:8733/apps/expenses/`. `tools/serve.py` serves the bu
 
 The site's CSP sets `base-uri 'none'`, which blocks `<base href>`. So `index.html` has no `<base>` tag, and every asset path is relative (`css/app.css`, `_framework/…`, `./js/interop.js`). Without a `<base>`, `document.baseURI` is the page URL itself. At `/apps/expenses/` that is already the right base for Blazor's `NavigationManager` and for its resource loader. The app has a single view and no path routes, so nothing depends on deeper URLs.
 
-The server has to do one thing: redirect **`/apps/expenses` → `/apps/expenses/`** (301). Without the trailing slash the base becomes `/apps/` and `_framework` would 404. nginx does this by default for a directory. Query strings and `/apps/expenses/index.html` work as they are.
+The server has to do one thing: redirect **`/apps/expenses` → `/apps/expenses/`** (301). Without the trailing slash the base becomes `/apps/` and `_framework` would 404. Check that the portfolio host does this before deploying. Query strings and `/apps/expenses/index.html` work as they are.
 
 ## Content Security Policy
 

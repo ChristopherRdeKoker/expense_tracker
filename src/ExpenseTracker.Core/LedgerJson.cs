@@ -30,7 +30,7 @@ public static class LedgerJson
         }
         catch (JsonException ex)
         {
-            var where = ex.Path is { Length: > 0 } path ? $" at {path}" : "";
+            var where = ex.Path is { Length: > 1 } path ? $" at {path}" : "";
             var line = ex.LineNumber is { } l ? $" (line {l + 1})" : "";
             throw new LedgerFormatException($"This is not valid expense data: the JSON is broken or has the wrong shape{where}{line}.");
         }

@@ -51,6 +51,14 @@ public class JsonTests
     }
 
     [Fact]
+    public void Broken_json_at_the_root_does_not_show_a_bare_path()
+    {
+        var ex = Assert.Throws<LedgerFormatException>(() => LedgerJson.Deserialize("garbage{"));
+        Assert.DoesNotContain("at $", ex.Message);
+        Assert.Contains("line 1", ex.Message);
+    }
+
+    [Fact]
     public void A_valid_empty_ledger_is_accepted()
     {
         var ledger = LedgerJson.Deserialize("{\"version\":1,\"categories\":[],\"months\":[]}");
