@@ -59,6 +59,7 @@ connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-ac
 - `'wasm-unsafe-eval'` is the only special source. The .NET runtime is WebAssembly and has to be compiled by the browser. It does not need `'unsafe-eval'`, `'unsafe-inline'` or `blob:`.
 - `img-src data:` is used for the select-box chevron in the stylesheet.
 - The template's inline bits are gone. The loading and error styles live in `css/app.css`.
+- Component styles live next to each component in `*.razor.css`. The build scopes them and bundles them into `ExpenseTracker.styles.css`, a same-origin file, so `style-src 'self'` covers it. `css/app.css` keeps the colour tokens, base styles and the shared buttons, inputs and cards.
 - The template's inline `<script type="importmap">` is removed too. To make that work, framework fingerprinting is turned off (`WasmFingerprintAssets=false`) so `dotnet.js` loads by its plain name.
   - Because the framework files are no longer fingerprinted, serve `_framework/` with revalidation (`Cache-Control: no-cache` plus ETag) rather than a long `immutable` max-age.
 - No component renders a `style="…"` attribute, because Blazor applies those with `setAttribute`, which `style-src 'self'` blocks. Bar widths and chart arcs are SVG geometry attributes instead, and colours come from CSS classes.

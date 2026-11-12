@@ -1,0 +1,35 @@
+.month-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 40px;
+}
+
+.month-title {
+    font-size: 1.45rem;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+}
+
+.month-actions {
+    display: flex;
+    gap: 2px;
+}
+
+.rename {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.rename .input {
+    flex: 1 1 200px;
+}
+
+.input-title {
+    font-weight: 700;
+}

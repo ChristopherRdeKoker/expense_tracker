@@ -1,0 +1,25 @@
+.filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.search {
+    position: relative;
+}
+
+.search .input {
+    padding-left: 36px;
+}
+
+::deep .search-icon {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translateY(-50%);
+    color: var(--faint);
+    pointer-events: none;
+}

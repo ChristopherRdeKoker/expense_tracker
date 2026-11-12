@@ -1,0 +1,84 @@
+.count {
+    display: inline-block;
+    min-width: 22px;
+    padding: 0 7px;
+    margin-left: 4px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 650;
+    text-align: center;
+    vertical-align: 2px;
+}
+
+.filter-note {
+    margin: 8px 0 0;
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+
+.group + .group {
+    margin-top: 4px;
+}
+
+.group-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 12px 2px 6px;
+    border-bottom: 1px solid var(--border);
+}
+
+.group-head h3 {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+}
+
+.group-hint {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.75rem;
+    color: var(--faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.group-total {
+    font-size: 0.85rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 54px;
+    padding: 6px 0 6px 4px;
+    border-bottom: 1px solid var(--border);
+}
+
+.row:last-child {
+    border-bottom: 0;
+}
+
+.row.is-editing {
+    display: block;
+    padding: 12px;
+    margin: 6px -6px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}

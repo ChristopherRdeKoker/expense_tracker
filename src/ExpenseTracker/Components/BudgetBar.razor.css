@@ -1,0 +1,11 @@
+.fill-accent { fill: var(--accent); }
+
+.fill-state { fill: var(--accent); }
+
+.bar {
+    display: block;
+}
+
+.bar-track {
+    fill: var(--surface-3);
+}

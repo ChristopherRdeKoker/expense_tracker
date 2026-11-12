@@ -1,0 +1,40 @@
+.notice-region:empty {
+    display: none;
+}
+
+.notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 8px 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.notice p {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.9rem;
+}
+
+::deep .notice-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--accent);
+}
+
+.notice-error {
+    background: var(--danger-soft);
+    border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
+.notice-error ::deep .notice-icon {
+    color: var(--danger);
+}
+
+.notice-success ::deep .notice-icon {
+    color: var(--good);
+}
