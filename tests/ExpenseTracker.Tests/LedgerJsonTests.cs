@@ -2,7 +2,7 @@ using ExpenseTracker.Core;
 
 namespace ExpenseTracker.Tests;
 
-public class JsonTests
+public class LedgerJsonTests
 {
     [Fact]
     public void Round_trip_keeps_everything()

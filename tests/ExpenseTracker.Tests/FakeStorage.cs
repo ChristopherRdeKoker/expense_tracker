@@ -34,13 +34,3 @@ internal sealed class FakeStorage : ILedgerStorage
         return ValueTask.CompletedTask;
     }
 }
-
-internal sealed class FixedToday(int year, int month) : IToday
-{
-    public ValueTask<(int Year, int Month)> GetAsync() => ValueTask.FromResult((year, month));
-}
-
-internal sealed class FixedTime(DateTimeOffset utcNow) : TimeProvider
-{
-    public override DateTimeOffset GetUtcNow() => utcNow;
-}

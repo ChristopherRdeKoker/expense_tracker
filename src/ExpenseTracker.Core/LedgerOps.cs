@@ -171,8 +171,3 @@ public static class LedgerOps
         }
     }
 }
-
-public static class Palette
-{
-    public const int Size = 8;
-}

@@ -141,4 +141,41 @@ public class LedgerOpsTests
 
         Assert.Equal(0.01m, month.Entries.First(e => e.Id == shop.Id).Amount);
     }
+
+    [Fact]
+    public void Rename_rejects_blank_and_trims()
+    {
+        var ledger = new Ledger();
+        var m = LedgerOps.AddMonth(ledger, 2026, 1);
+        Assert.False(LedgerOps.RenameMonth(ledger, m.Id, "   "));
+        Assert.Equal("January 2026", m.Name);
+        Assert.True(LedgerOps.RenameMonth(ledger, m.Id, "  Bonus   month "));
+        Assert.Equal("Bonus month", m.Name);
+    }
+
+    [Fact]
+    public void Deleting_a_category_uncategorises_its_entries()
+    {
+        var ledger = TestData.Ledger(out var month);
+        var food = ledger.Categories.First(c => c.Name == "Food");
+        LedgerOps.DeleteCategory(ledger, food.Id);
+        Assert.DoesNotContain(month.Entries, e => e.CategoryId == food.Id);
+        LedgerJson.Validate(ledger);
+    }
+
+    [Fact]
+    public void Negative_amounts_are_refused()
+    {
+        var month = new Month { Id = "m", Name = "M" };
+        Assert.Throws<ArgumentOutOfRangeException>(() => LedgerOps.AddEntry(month, EntryKind.Expense, "x", -1m, null));
+    }
+
+    [Fact]
+    public void Duplicate_category_names_are_refused()
+    {
+        var ledger = new Ledger();
+        LedgerOps.AddCategory(ledger, "Food", 0m);
+        var ex = Assert.Throws<ArgumentException>(() => LedgerOps.AddCategory(ledger, " food ", 0m));
+        Assert.Contains("already", ex.Message);
+    }
 }

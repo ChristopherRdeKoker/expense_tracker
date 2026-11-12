@@ -3,15 +3,6 @@ using Microsoft.JSInterop;
 
 namespace ExpenseTracker.Services;
 
-public enum NoticeTone
-{
-    Info,
-    Success,
-    Error
-}
-
-public sealed record Notice(string Message, NoticeTone Tone, bool CanUndo = false, bool Sticky = false);
-
 public sealed class LedgerStore(ILedgerStorage storage, IToday today, TimeProvider time)
 {
     public const string StorageKey = "expense-tracker.v1";

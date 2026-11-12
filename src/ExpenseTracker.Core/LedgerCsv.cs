@@ -3,8 +3,6 @@ using System.Text;
 
 namespace ExpenseTracker.Core;
 
-public sealed record CsvRow(string Month, EntryKind Kind, string Name, string Category, decimal Amount);
-
 public static class LedgerCsv
 {
     public const string Header = "Month,Kind,Name,Category,Amount";
@@ -35,7 +33,7 @@ public static class LedgerCsv
             throw new LedgerFormatException("The CSV file is empty.");
         }
 
-        var records = ReadRecords(csv.TrimStart('﻿'));
+        var records = CsvReader.ReadRecords(csv.TrimStart('﻿'));
         if (records.Count == 0 || string.Join(',', records[0]).Trim() != Header)
         {
             throw new LedgerFormatException($"This is not an expense CSV: the first line must be \"{Header}\".");
@@ -117,72 +115,4 @@ public static class LedgerCsv
 
     private static string Unguard(string value) =>
         value.Length > 1 && value[0] == '\'' && FormulaLeadChars.Contains(value[1]) ? value[1..] : value;
-
-    private static List<List<string>> ReadRecords(string text)
-    {
-        var records = new List<List<string>>();
-        var record = new List<string>();
-        var field = new StringBuilder();
-        var inQuotes = false;
-        var i = 0;
-        while (i < text.Length)
-        {
-            var c = text[i];
-            if (inQuotes)
-            {
-                if (c == '"')
-                {
-                    if (i + 1 < text.Length && text[i + 1] == '"')
-                    {
-                        field.Append('"');
-                        i += 2;
-                        continue;
-                    }
-                    inQuotes = false;
-                }
-                else
-                {
-                    field.Append(c);
-                }
-                i++;
-                continue;
-            }
-
-            switch (c)
-            {
-                case '"' when field.Length == 0:
-                    inQuotes = true;
-                    break;
-                case ',':
-                    record.Add(field.ToString());
-                    field.Clear();
-                    break;
-                case '\r' or '\n':
-                    record.Add(field.ToString());
-                    field.Clear();
-                    records.Add(record);
-                    record = [];
-                    if (c == '\r' && i + 1 < text.Length && text[i + 1] == '\n')
-                    {
-                        i++;
-                    }
-                    break;
-                default:
-                    field.Append(c);
-                    break;
-            }
-            i++;
-        }
-
-        if (inQuotes)
-        {
-            throw new LedgerFormatException("The CSV file ends inside a quoted field.");
-        }
-        if (field.Length > 0 || record.Count > 0)
-        {
-            record.Add(field.ToString());
-            records.Add(record);
-        }
-        return records;
-    }
 }

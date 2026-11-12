@@ -2,7 +2,7 @@ using ExpenseTracker.Core;
 
 namespace ExpenseTracker.Tests;
 
-public class CsvTests
+public class LedgerCsvTests
 {
     [Fact]
     public void Export_has_header_and_plain_amounts()
