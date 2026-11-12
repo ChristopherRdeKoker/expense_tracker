@@ -1,0 +1,30 @@
+@{
+    var t = LedgerMath.Totals(Month.Entries);
+    var overall = LedgerMath.Overall(Store.Ledger, Month);
+}
+<section class="summary" aria-label="Month summary">
+    <div class="stat">
+        <span class="stat-label">Income</span>
+        <span class="stat-value tone-good" data-testid="total-income">@Money.Format(t.Income)</span>
+    </div>
+    <div class="stat">
+        <span class="stat-label">Spent</span>
+        <span class="stat-value" data-testid="total-spent">@Money.Format(t.Spent)</span>
+        <span class="stat-sub">@Money.Format(t.Recurring) recurring</span>
+    </div>
+    <div class="stat stat-hero @(t.LeftOver < 0 ? "is-negative" : "")">
+        <span class="stat-label">Left over</span>
+        <span class="stat-value" data-testid="left-over">@Money.Format(t.LeftOver)</span>
+        @if (overall is not null)
+        {
+            <span class="stat-sub">@FormatPercent(overall.Percent) of budgets used</span>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public LedgerStore Store { get; set; } = default!;
+    [Parameter, EditorRequired] public Month Month { get; set; } = default!;
+
+    private static string FormatPercent(decimal? p) => p is null ? "–" : $"{Math.Round(p.Value):0}%";
+}

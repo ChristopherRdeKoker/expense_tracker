@@ -1,0 +1,129 @@
+@inject BrowserBridge Browser
+
+<section class="card quick" aria-labelledby="qa-title">
+    <div class="card-head">
+        <h2 id="qa-title">Quick add</h2>
+        <fieldset class="segmented">
+            <legend class="sr-only">Type of entry</legend>
+            @foreach (var (kind, label) in Kinds)
+            {
+                <label class="seg @(_kind == kind ? "is-on" : "")">
+                    <input type="radio" name="qa-kind" class="sr-only" checked="@(_kind == kind)" @onchange="() => SetKind(kind)" />
+                    @label
+                </label>
+            }
+        </fieldset>
+    </div>
+
+    <div class="quick-fields">
+        <div class="field amount-field @(_error is null ? "" : "has-error")">
+            <label for="qa-amount" class="field-label">Amount</label>
+            <div class="money-input">
+                <span class="money-prefix" aria-hidden="true">R</span>
+                <input id="qa-amount" class="input input-amount" inputmode="decimal" autocomplete="off" enterkeyhint="done"
+                       placeholder="0.00" aria-describedby="qa-hint" aria-invalid="@(_error is null ? "false" : "true")"
+                       @bind="_amount" @bind:event="oninput" @onkeydown="OnAmountKey" data-testid="qa-amount" />
+            </div>
+        </div>
+        <div class="field note-field">
+            <label for="qa-note" class="field-label">Description <span class="optional">optional</span></label>
+            <input id="qa-note" class="input" maxlength="80" autocomplete="off" placeholder="@NotePlaceholder"
+                   @bind="_note" @bind:event="oninput" @onkeydown="OnAmountKey" data-testid="qa-note" />
+        </div>
+    </div>
+
+    <p id="qa-hint" class="hint @(_error is null ? "" : "hint-error")" aria-live="polite">
+        @(_error ?? (_kind == EntryKind.Income ? "Then tap Add income." : "Then tap a category to add it."))
+    </p>
+
+    @if (_kind == EntryKind.Income)
+    {
+        <button type="button" class="btn btn-primary btn-block" @onclick="() => Add(null)" data-testid="qa-add-income">Add income</button>
+    }
+    else
+    {
+        <div class="chips" role="group" aria-label="Add to category">
+            @foreach (var c in Store.Ledger.Categories)
+            {
+                <button type="button" class="chip @(c.Id == _lastCategory ? "is-last" : "")" @onclick="() => Add(c.Id)" data-testid="@($"chip-{c.Name}")">
+                    <Swatch Category="c" />
+                    <span>@c.Name</span>
+                </button>
+            }
+            <button type="button" class="chip chip-plain" @onclick="() => Add(null)">No category</button>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public LedgerStore Store { get; set; } = default!;
+    [Parameter, EditorRequired] public Month Month { get; set; } = default!;
+
+    private static readonly (EntryKind, string)[] Kinds =
+    [
+        (EntryKind.Expense, "Expense"),
+        (EntryKind.Recurring, "Recurring"),
+        (EntryKind.Income, "Income")
+    ];
+
+    private EntryKind _kind = EntryKind.Expense;
+    private string _amount = "";
+    private string _note = "";
+    private string? _error;
+    private string? _lastCategory;
+
+    private string NotePlaceholder => _kind switch
+    {
+        EntryKind.Income => "e.g. Salary",
+        EntryKind.Recurring => "e.g. Rent — repeats monthly",
+        _ => "e.g. Woolies"
+    };
+
+    private void SetKind(EntryKind kind)
+    {
+        _kind = kind;
+        _error = null;
+    }
+
+    private async Task Add(string? categoryId)
+    {
+        if (!Money.TryParse(_amount, out var amount) || amount <= 0)
+        {
+            _error = string.IsNullOrWhiteSpace(_amount)
+                ? "Enter an amount first."
+                : $"“{_amount.Trim()}” is not an amount. Use numbers like 120 or 89.95.";
+            await Browser.FocusAsync("qa-amount", select: true);
+            return;
+        }
+        _error = null;
+        await Store.AddEntryAsync(_kind, _note, amount, categoryId);
+        _lastCategory = categoryId;
+        _amount = "";
+        _note = "";
+        await Browser.FocusAsync("qa-amount");
+    }
+
+    private async Task OnAmountKey(KeyboardEventArgs e)
+    {
+        if (e.Key != "Enter")
+        {
+            return;
+        }
+        if (_kind == EntryKind.Income)
+        {
+            await Add(null);
+        }
+        else if (_lastCategory is not null && Store.Ledger.FindCategory(_lastCategory) is not null)
+        {
+            await Add(_lastCategory);
+        }
+        else
+        {
+            _error = Money.TryParse(_amount, out _) ? "Now tap a category." : null;
+            if (_error is null)
+            {
+                await Add(null);
+            }
+        }
+    }
+}

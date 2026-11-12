@@ -1,0 +1,12 @@
+<svg class="bar" width="100%" height="8" aria-hidden="true" focusable="false">
+    <rect class="bar-track" x="0" y="0" width="100%" height="8" rx="4" />
+    @if (Fraction > 0)
+    {
+        <rect class="bar-fill @ColorClass" x="0" y="0" width="@Css.Percent(Fraction)" height="8" rx="4" />
+    }
+</svg>
+
+@code {
+    [Parameter] public decimal Fraction { get; set; }
+    [Parameter] public string ColorClass { get; set; } = "";
+}

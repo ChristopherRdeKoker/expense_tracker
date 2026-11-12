@@ -1,0 +1,81 @@
+@implements IDisposable
+@inject LedgerStore Store
+
+@if (!Store.IsLoaded)
+{
+    <div class="boot" role="status">Loading your ledger…</div>
+}
+else
+{
+    <div class="shell">
+        <header class="topbar">
+            <div class="brand">
+                <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+                    <rect x="2" y="6" width="28" height="20" rx="5" class="brand-card" />
+                    <rect x="2" y="11" width="28" height="4" class="brand-stripe" />
+                    <circle cx="23" cy="20.5" r="2.5" class="brand-dot" />
+                </svg>
+                <div>
+                    <h1>Expenses</h1>
+                    <p class="tagline">Monthly budgets, in rand</p>
+                </div>
+            </div>
+            <DataMenu Store="Store" />
+        </header>
+
+        <NoticeBar Store="Store" />
+
+        @if (Store.ShowingSample)
+        {
+            <div class="sample-banner">
+                <p>You're looking at sample data so you can see how it works. Everything stays in this browser.</p>
+                <div class="sample-actions">
+                    <button type="button" class="btn btn-quiet" @onclick="Store.DismissSample">Keep exploring</button>
+                    <button type="button" class="btn btn-primary" @onclick="Store.StartFreshAsync">Start fresh</button>
+                </div>
+            </div>
+        }
+
+        <MonthTabs Store="Store" />
+
+        @if (Store.SelectedMonth is { } month)
+        {
+            <main id="month-panel" class="layout" role="tabpanel" aria-labelledby="@($"tab-{month.Id}")">
+                <div class="area-head"><MonthHeader Store="Store" Month="month" /></div>
+                <div class="area-summary"><SummaryCards Store="Store" Month="month" /></div>
+                <div class="col col-main">
+                    <div class="area-quick"><QuickAdd Store="Store" Month="month" /></div>
+                    <div class="area-entries"><EntryList Store="Store" Month="month" /></div>
+                </div>
+                <div class="col col-side">
+                    <div class="area-budgets"><BudgetPanel Store="Store" Month="month" /></div>
+                    <div class="area-chart"><SpendingChart Store="Store" Month="month" /></div>
+                </div>
+            </main>
+        }
+        else
+        {
+            <main class="empty-state">
+                <h2>No months yet</h2>
+                <p>Start a month to track what comes in and what goes out.</p>
+                <button type="button" class="btn btn-primary" @onclick="Store.AddMonthAsync">Start @MonthNames.Format(Store.Today.Year, Store.Today.Month)</button>
+            </main>
+        }
+
+        <footer class="foot">
+            <p>Your data never leaves this device. Export a backup from <strong>Data</strong> now and then.</p>
+        </footer>
+    </div>
+}
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        Store.Changed += OnChanged;
+        await Store.InitAsync();
+    }
+
+    private void OnChanged() => StateHasChanged();
+
+    public void Dispose() => Store.Changed -= OnChanged;
+}

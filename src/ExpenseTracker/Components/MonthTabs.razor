@@ -1,0 +1,58 @@
+@inject BrowserBridge Browser
+
+<nav class="months" aria-label="Months">
+    <div class="month-strip" role="tablist" aria-label="Months, newest first">
+        @foreach (var m in Store.Ledger.Months)
+        {
+            var selected = m.Id == Store.SelectedMonth?.Id;
+            <button type="button"
+                    id="@($"tab-{m.Id}")"
+                    role="tab"
+                    class="month-tab @(selected ? "is-active" : "")"
+                    aria-selected="@(selected ? "true" : "false")"
+                    aria-controls="month-panel"
+                    tabindex="@(selected ? 0 : -1)"
+                    @onclick="() => Store.Select(m.Id)"
+                    @onkeydown="e => OnKey(e, m.Id)">
+                @m.Name
+            </button>
+        }
+    </div>
+    <button type="button" class="btn btn-ghost new-month" @onclick="AddMonth" data-testid="new-month">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 4v12M4 10h12" class="icon-stroke" /></svg>
+        New month
+    </button>
+</nav>
+
+@code {
+    [Parameter, EditorRequired] public LedgerStore Store { get; set; } = default!;
+
+    private async Task AddMonth()
+    {
+        await Store.AddMonthAsync();
+        if (Store.SelectedMonth is { } m)
+        {
+            await Browser.FocusAsync($"tab-{m.Id}");
+        }
+    }
+
+    private async Task OnKey(KeyboardEventArgs e, string monthId)
+    {
+        var months = Store.Ledger.Months;
+        var index = months.FindIndex(m => m.Id == monthId);
+        var target = e.Key switch
+        {
+            "ArrowRight" => Math.Min(index + 1, months.Count - 1),
+            "ArrowLeft" => Math.Max(index - 1, 0),
+            "Home" => 0,
+            "End" => months.Count - 1,
+            _ => -1
+        };
+        if (target < 0 || target == index)
+        {
+            return;
+        }
+        Store.Select(months[target].Id);
+        await Browser.FocusAsync($"tab-{months[target].Id}");
+    }
+}

@@ -1,0 +1,91 @@
+@inject BrowserBridge Browser
+
+<div class="data-menu">
+    <button type="button" class="btn btn-ghost" aria-haspopup="true" aria-expanded="@(_open ? "true" : "false")" aria-controls="data-panel"
+            @onclick="() => _open = !_open" data-testid="data-menu">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 3v9m0 0-3.5-3.5M10 12l3.5-3.5M4 14v2h12v-2" class="icon-stroke" /></svg>
+        Data
+    </button>
+    @if (_open)
+    {
+        <div class="menu-backdrop" @onclick="() => _open = false"></div>
+        <div id="data-panel" class="menu" role="group" aria-label="Data" @onkeydown="OnKey">
+            <button type="button" class="menu-item" @onclick="ExportJson" data-testid="export-json">
+                <span>Export JSON</span><span class="menu-sub">Full backup, re-importable</span>
+            </button>
+            <button type="button" class="menu-item" @onclick="ExportCsv" data-testid="export-csv">
+                <span>Export CSV</span><span class="menu-sub">For spreadsheets</span>
+            </button>
+            <button type="button" class="menu-item" @onclick="PickFile" data-testid="import">
+                <span>Import…</span><span class="menu-sub">JSON or CSV — replaces current data</span>
+            </button>
+            <button type="button" class="menu-item menu-danger" @onclick="StartFresh">
+                <span>Start fresh</span><span class="menu-sub">Clear everything (you can undo)</span>
+            </button>
+        </div>
+    }
+    <InputFile id="import-file" class="sr-only" tabindex="-1" aria-hidden="true" accept=".json,.csv,application/json,text/csv" OnChange="OnFile" data-testid="import-file" />
+</div>
+
+@code {
+    [Parameter, EditorRequired] public LedgerStore Store { get; set; } = default!;
+
+    private bool _open;
+
+    private string Stamp => $"{Store.Today.Year:0000}-{Store.Today.Month:00}";
+
+    private async Task ExportJson()
+    {
+        _open = false;
+        await Browser.DownloadAsync($"expenses-{Stamp}.json", "application/json", Store.ExportJson());
+    }
+
+    private async Task ExportCsv()
+    {
+        _open = false;
+        await Browser.DownloadAsync($"expenses-{Stamp}.csv", "text/csv", Store.ExportCsv());
+    }
+
+    private async Task PickFile()
+    {
+        _open = false;
+        await Browser.ClickAsync("import-file");
+    }
+
+    private async Task StartFresh()
+    {
+        _open = false;
+        await Store.StartFreshAsync();
+    }
+
+    private void OnKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            _open = false;
+        }
+    }
+
+    private async Task OnFile(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file.Size > LedgerStore.MaxImportBytes)
+        {
+            Store.ReportError($"“{file.Name}” is {file.Size / 1024:N0} KB; imports are limited to {LedgerStore.MaxImportBytes / 1024 / 1024} MB. Your data was not changed.");
+            return;
+        }
+        string text;
+        try
+        {
+            await using var stream = file.OpenReadStream(LedgerStore.MaxImportBytes);
+            using var reader = new StreamReader(stream);
+            text = await reader.ReadToEndAsync();
+        }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException)
+        {
+            Store.ReportError($"Could not read “{file.Name}”: {ex.Message} Your data was not changed.");
+            return;
+        }
+        await Store.ImportAsync(file.Name, text);
+    }
+}

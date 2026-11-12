@@ -1,0 +1,158 @@
+@inject BrowserBridge Browser
+
+<section class="card budgets" aria-labelledby="budgets-title">
+    <div class="card-head">
+        <h2 id="budgets-title">Budgets</h2>
+        <button type="button" class="btn btn-ghost btn-small" @onclick="ToggleEdit" aria-expanded="@(_editing ? "true" : "false")" data-testid="edit-budgets">
+            @(_editing ? "Done" : "Edit")
+        </button>
+    </div>
+
+    @if (_editing)
+    {
+        <p class="hint">Monthly budget per category. Leave at 0 for no budget.</p>
+        <ul class="budget-edit">
+            @foreach (var c in Store.Ledger.Categories)
+            {
+                <li class="budget-edit-row">
+                    <Swatch Category="c" />
+                    <label class="sr-only" for="@($"cat-name-{c.Id}")">Category name</label>
+                    <input id="@($"cat-name-{c.Id}")" class="input" maxlength="80" value="@c.Name"
+                           @onchange="e => Store.RenameCategoryAsync(c.Id, e.Value?.ToString() ?? string.Empty)" />
+                    <label class="sr-only" for="@($"cat-budget-{c.Id}")">@($"Monthly budget for {c.Name}, in rand")</label>
+                    <div class="money-input money-input-small">
+                        <span class="money-prefix" aria-hidden="true">R</span>
+                        <input id="@($"cat-budget-{c.Id}")" class="input input-num" inputmode="decimal" value="@Money.FormatPlain(c.Budget)"
+                               @onchange="e => SetBudget(c, e.Value?.ToString())" data-testid="@($"budget-{c.Name}")" />
+                    </div>
+                    <button type="button" class="icon-btn icon-danger" aria-label="@($"Delete category {c.Name}")" @onclick="() => Store.DeleteCategoryAsync(c.Id)">
+                        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 6h12M8 6V4h4v2M6 6l1 10h6l1-10" class="icon-stroke" /></svg>
+                    </button>
+                </li>
+            }
+        </ul>
+        <div class="add-category" @onkeydown="OnNewKey">
+            <label class="sr-only" for="new-cat-name">New category name</label>
+            <input id="new-cat-name" class="input" maxlength="80" placeholder="New category" @bind="_newName" @bind:event="oninput" />
+            <label class="sr-only" for="new-cat-budget">New category monthly budget, in rand</label>
+            <div class="money-input money-input-small">
+                <span class="money-prefix" aria-hidden="true">R</span>
+                <input id="new-cat-budget" class="input input-num" inputmode="decimal" placeholder="0" @bind="_newBudget" @bind:event="oninput" />
+            </div>
+            <button type="button" class="btn btn-primary btn-small" @onclick="AddCategory">Add</button>
+        </div>
+        @if (_error is not null)
+        {
+            <p class="hint hint-error" role="alert">@_error</p>
+        }
+    }
+    else
+    {
+        var usages = LedgerMath.Budgets(Store.Ledger, Month);
+        var overall = LedgerMath.Overall(Store.Ledger, Month);
+        @if (overall is not null)
+        {
+            <div class="budget overall @Css.State(overall.State)">
+                <div class="budget-line">
+                    <span class="budget-name">All budgets</span>
+                    <span class="budget-figures">@Money.Format(overall.Spent) <span class="of">of @Money.Format(overall.Budget)</span></span>
+                </div>
+                <BudgetBar Fraction="overall.BarFraction" ColorClass="fill-state" />
+                <span class="budget-status">@Status(overall)</span>
+            </div>
+        }
+        <ul class="budget-list">
+            @foreach (var u in usages.OrderByDescending(u => u.Budget > 0).ThenByDescending(u => u.Percent ?? 0))
+            {
+                <li class="budget @Css.State(u.State)" data-testid="budget-row">
+                    <div class="budget-line">
+                        <span class="budget-name"><Swatch Category="u.Category" /> @u.Category.Name</span>
+                        <span class="budget-figures">
+                            @Money.Format(u.Spent)
+                            @if (u.Budget > 0)
+                            {
+                                <span class="of">of @Money.Format(u.Budget)</span>
+                            }
+                        </span>
+                    </div>
+                    @if (u.Budget > 0)
+                    {
+                        <BudgetBar Fraction="u.BarFraction" ColorClass="fill-state" />
+                        <span class="budget-status">@Status(u)</span>
+                    }
+                    else
+                    {
+                        <span class="budget-status muted">No budget set</span>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public LedgerStore Store { get; set; } = default!;
+    [Parameter, EditorRequired] public Month Month { get; set; } = default!;
+
+    private bool _editing;
+    private string _newName = "";
+    private string _newBudget = "";
+    private string? _error;
+
+    private static string Status(BudgetUsage u) => u.State switch
+    {
+        BudgetState.Over => $"{Money.Format(-u.Remaining)} over · {u.Percent:0}%",
+        _ => $"{Money.Format(u.Remaining)} left · {u.Percent:0}%"
+    };
+
+    private void ToggleEdit()
+    {
+        _editing = !_editing;
+        _error = null;
+    }
+
+    private async Task SetBudget(Category c, string? text)
+    {
+        var raw = string.IsNullOrWhiteSpace(text) ? "0" : text;
+        if (!Money.TryParse(raw, out var value))
+        {
+            _error = $"“{text}” is not a valid budget for {c.Name}. Use numbers like 2500.";
+            return;
+        }
+        _error = null;
+        await Store.SetBudgetAsync(c.Id, value);
+    }
+
+    private async Task AddCategory()
+    {
+        var budgetText = string.IsNullOrWhiteSpace(_newBudget) ? "0" : _newBudget;
+        if (string.IsNullOrWhiteSpace(_newName))
+        {
+            _error = "Give the new category a name.";
+            await Browser.FocusAsync("new-cat-name");
+            return;
+        }
+        if (!Money.TryParse(budgetText, out var budget))
+        {
+            _error = $"“{_newBudget}” is not a valid budget. Use numbers like 2500.";
+            return;
+        }
+        var before = Store.Ledger.Categories.Count;
+        await Store.AddCategoryAsync(_newName, budget);
+        if (Store.Ledger.Categories.Count > before)
+        {
+            _error = null;
+            _newName = "";
+            _newBudget = "";
+            await Browser.FocusAsync("new-cat-name");
+        }
+    }
+
+    private async Task OnNewKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await AddCategory();
+        }
+    }
+}

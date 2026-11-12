@@ -1,0 +1,65 @@
+@{
+    var slices = LedgerMath.Breakdown(Store.Ledger, Month);
+    var total = slices.Sum(s => s.Amount);
+}
+<section class="card chart" aria-labelledby="chart-title">
+    <div class="card-head">
+        <h2 id="chart-title">Where it went</h2>
+    </div>
+    @if (slices.Count == 0)
+    {
+        <p class="empty">No spending in @Month.Name yet.</p>
+    }
+    else
+    {
+        <div class="chart-body">
+            <svg class="donut" viewBox="0 0 120 120" role="img" aria-labelledby="donut-label">
+                <title id="donut-label">@Describe(slices, total)</title>
+                <circle class="donut-track" cx="60" cy="60" r="@Radius" />
+                @{
+                    var offset = 0.0;
+                }
+                @foreach (var s in slices)
+                {
+                    var length = (double)s.Fraction * Circumference;
+                    var visible = Math.Max(0, length - (slices.Count > 1 ? Gap : 0));
+                    <circle class="donut-slice @Css.Color(s.Category)" cx="60" cy="60" r="@Radius"
+                            stroke-dasharray="@($"{Css.Number(visible)} {Css.Number(Circumference)}")"
+                            stroke-dashoffset="@Css.Number(-offset)"
+                            transform="rotate(-90 60 60)" />
+                    offset += length;
+                }
+                <text x="60" y="56" class="donut-caption">Spent</text>
+                <text x="60" y="71" class="donut-total">@Short(total)</text>
+            </svg>
+            <ul class="legend">
+                @foreach (var s in slices)
+                {
+                    <li>
+                        <Swatch Category="s.Category" />
+                        <span class="legend-name">@(s.Category?.Name ?? "No category")</span>
+                        <span class="legend-amount">@Money.Format(s.Amount)</span>
+                        <span class="legend-pct">@Math.Round(s.Fraction * 100m)%</span>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public LedgerStore Store { get; set; } = default!;
+    [Parameter, EditorRequired] public Month Month { get; set; } = default!;
+
+    private const double Radius = 46;
+    private const double Gap = 1.5;
+    private static readonly double Circumference = 2 * Math.PI * Radius;
+
+    private static string Short(decimal amount) => amount >= 100_000m
+        ? $"R{Math.Round(amount / 1000m):0}k"
+        : Money.Format(Math.Round(amount)).Replace(".00", "");
+
+    private static string Describe(IReadOnlyList<CategorySlice> slices, decimal total) =>
+        $"Spending by category, {Money.Format(total)} in total: " +
+        string.Join(", ", slices.Select(s => $"{s.Category?.Name ?? "No category"} {Math.Round(s.Fraction * 100m)}%"));
+}
