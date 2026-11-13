@@ -27,6 +27,7 @@ const text = async (page, sel) => norm(await page.locator(sel).first().textConte
 
 const { ctx, page } = await newPage();
 await page.goto(BASE); await ready(page);
+{ const html = await (await fetch(BASE)).text(); const m = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]*)"/); ok(!!m && m[1].includes("default-src 'none'") && m[1].includes("script-src 'self' 'wasm-unsafe-eval'") && !m[1].includes("'unsafe-eval'") && !m[1].includes("'unsafe-inline'"), 'page carries its own CSP meta (default-src none, wasm via script-src only)'); }
 console.log('1. first visit shows sample');
 ok((await page.locator('.sample-banner').count()) === 1, 'sample banner visible');
 await page.screenshot({ path: `${SHOTS}/phone-390-light.png`, fullPage: true });
